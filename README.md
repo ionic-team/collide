@@ -27,7 +27,7 @@ COMING SOON:
 ### API (quickly changing)
 
 ```js
-var animator = collide.create({
+var animator = collide.Animator({
   duration: 1000,
   easing: 'ease-in-out'
 });
@@ -57,7 +57,7 @@ animator.percent(0).pause(); //everything is chainable
 See test.html.
 
 ```js
-var animator = collide.create({
+var animator = collide.Animator({
   duration: 1000,
   easing: 'spring'
 })
