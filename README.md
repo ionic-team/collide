@@ -7,9 +7,9 @@ Objective: to provide animations with more power and control than css animations
 
 Why aren’t CSS animations powerful enough? Lack of fine-tuned control while they are running. Here's a common example: If we’re dragging out a sidemenu in our mobile app, we need a way to sync the drag gesture with the sidemenu’s animation. This is not doable with CSS animations.
 
-Collide provides both a tweening API for easy-use (an API very similar to WebAnimations), and allows the user to do custom behavior every frame for more complicated cases than tweening can handle.
-
 Collide allows the user to pause, play, reverse, repeat, and skip to any part of an animation at any time.
+
+It provides both a tweening API similar to WebAnimations for simple use-cases, and allows advanced behavior through callbacks on every frame for more complicated behaviors.
 
 
 COMING SOON: 
