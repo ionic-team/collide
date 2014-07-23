@@ -1,16 +1,15 @@
-collide-io
+Collide
 ----------
 
-A simple javascript animation library. WIP.
+Collide is a powerful yet simple javascript animation engine for web and hybrid mobile apps, inspired by [Facebook Pop](https://github.com/facebook/pop).
 
-Objective: to provide animations with more power and control than css animations provide, without sacrificing performance.
+Animations in Collide have more power and control than CSS animations or transitions, all without sacrificing performance.
 
-Why aren’t CSS animations powerful enough? Lack of fine-tuned control while they are running. Here's a common example: If we’re dragging out a sidemenu in our mobile app, we need a way to sync the drag gesture with the sidemenu’s animation. This is not doable with CSS animations.
+Collide allows the user to pause, play, reverse, repeat, and skip to any part of an animation at any time, and has support for non-cubic bezier curves, enabling powerful Physics animations (Springs, Gravity, and Velocity) without the complexity of a full-fledged physics engine.
 
-Collide allows the user to pause, play, reverse, repeat, and skip to any part of an animation at any time.
+Previously, with CSS animations, it wasn't possible to do things like step through an animation, pause, stop, or reverse it at any point in the timeline, or to use more complicated easing curves.
 
-It provides both a tweening API similar to WebAnimations for simple use-cases, and allows the devleoper to hook into every frame for more complicated behaviors.
-
+Collide solves this with a simple Javascript animation engine and API. It also provides a tweening API similar to WebAnimations, and allows the developer to hook into every frame for full control over the behavior of an animation.
 
 COMING SOON: 
 
@@ -68,8 +67,3 @@ var animator = collide.create({
   })
   .play();
 ```
-
-### Authors
-
-* Max Lynch - @mlynch
-* Andrew Joslin - @ajoslin 
