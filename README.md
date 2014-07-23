@@ -9,7 +9,7 @@ Why aren’t CSS animations powerful enough? Lack of fine-tuned control while th
 
 Collide allows the user to pause, play, reverse, repeat, and skip to any part of an animation at any time.
 
-It provides both a tweening API similar to WebAnimations for simple use-cases, and allows advanced behavior through callbacks on every frame for more complicated behaviors.
+It provides both a tweening API similar to WebAnimations for simple use-cases, and allows the devleoper to hook into every frame for more complicated behaviors.
 
 
 COMING SOON: 
