@@ -1,8 +1,7 @@
 
 var Animator = require('./animator');
 
-module.exports = Animator;
-
-function CollideAnimation(config) {
-  return new Animator(config);
-}
+module.exports = {
+  Animator: Animator,
+  dynamics: require('./motion/dynamics')
+};

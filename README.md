@@ -1,7 +1,7 @@
 collide-io
 ----------
 
-A simple javascript animation library built on top of [collide-motion](https://github.com/driftyco/collide-motion). WIP.
+A simple javascript animation library. WIP.
 
 Objective: to provide animations with more power and control than css animations provide, without sacrificing performance.
 

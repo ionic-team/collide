@@ -1,15 +1,13 @@
 
+var easingFn = require('./motion/easing-functions');
 var EventEmitter = require('events');
-var collideMotion = require('collide-motion');
+var Motion = require('./motion/instance');
 var Promise = require('promiscuous');
 var extend = require('node.extend');
 
 function noop(){}
 
-module.exports = {
-  Animator: CollideAnimator,
-  dynamics: require('collide-motion').dynamics
-};
+module.exports = CollideAnimator;
 
 function CollideAnimator(config) {
   var self;
@@ -26,7 +24,7 @@ function CollideAnimator(config) {
 
   config.step = onMotionStep;
   config.onComplete = onMotionComplete;
-  var motion = collideMotion.create(config);
+  var motion = createMotion(config);
 
   return self = {
     //Functions
@@ -145,4 +143,28 @@ function CollideAnimator(config) {
     motion.repeat = self.repeatCount = n;
     return self;
   }
+}
+
+
+function createMotion(opts) {
+  if(typeof opts.easing === 'string') {
+    tf = easingFn[opts.easing] || easingFn.linear;
+    if(opts.easing.indexOf('cubic-bezier(') >= 0) {
+      var parts = opts.easing.replace('cubic-bezier(', '').replace(')', '').split(',');
+      tf = easingFn['cubic-bezier'];
+      tf = tf(parts[0], parts[1], parts[2], parts[3], opts.duration);
+    } else {
+      tf = tf(opts.duration);
+    }
+  } else {
+    tf = opts.easing;
+    tf = tf(opts.duration);
+  }
+
+  opts.easingFn = tf;
+
+  if(opts.dynamicsType) {
+    opts.dynamic = new opts.dynamicsType(opts);
+  }
+  return new Motion(opts);
 }
