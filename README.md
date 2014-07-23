@@ -23,7 +23,7 @@ COMING SOON:
 - `npm install`
 - `npm install -g browserify`
 - `npm run build`
-- Generated collide.js is require/CommonJS/window friendly. If you include it, it will be included as `window.collide`.
+- Generated file collide-io.js is require/CommonJS/window friendly. If you include it, it will be included as `window.collide`.
 
 ### API (quickly changing)
 
