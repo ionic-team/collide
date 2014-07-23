@@ -7,7 +7,7 @@ Animations in Collide have more power and control than CSS animations or transit
 
 Collide allows the user to pause, play, reverse, repeat, and skip to any part of an animation at any time, and has support for non-cubic bezier curves, enabling powerful Physics animations (Springs, Gravity, and Velocity) without the complexity of a full-fledged physics engine.
 
-Previously, with CSS animations, it wasn't possible to do things like step through an animation, pause, stop, or reverse it at any point in the timeline, or to use more complicated easing curves. We built Collide because we wanted to give Ionic developers the power to build complicated animation and gesture driven mobile apps with HTML5 and AngularJS.
+Previously, with CSS animations, it wasn't possible to do things like step through an animation, pause, stop, or reverse it at any point in the timeline, or to use more complicated easing curves. We built Collide because we wanted to give Ionic developers the power to build complicated animation and gesture driven mobile apps with HTML5 and AngularJS, something that wasn't possible before.
 
 Collide solves the problems with CSS animations with a simple Javascript animation engine and API. It also provides a tweening API similar to WebAnimations, and allows the developer to hook into every frame for full control over the behavior of an animation.
 
