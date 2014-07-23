@@ -68,3 +68,8 @@ var animator = collide.create({
   })
   .play();
 ```
+
+### Authors
+
+* Max Lynch - @mlynch
+* Andrew Joslin - @ajoslin 
