@@ -1,0 +1,14 @@
+{
+  "name": "collide-io",
+  "version": "0.0.0",
+  "main": "collide-io.js",
+  "scripts": {
+    "build": "browserify src/index.js -s collide > collide-io.js"
+  },
+  "dependencies": {
+    "events": "^1.0.1",
+    "promiscuous": "^0.6.0",
+    "node.extend": "^1.0.10",
+    "collide-motion": "0.0.2"
+  }
+}
