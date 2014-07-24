@@ -1,9 +1,9 @@
 {
-  "name": "collide-io",
-  "version": "0.0.0",
-  "main": "collide-io.js",
+  "name": "collide",
+  "version": "0.0.4",
+  "main": "collide.js",
   "scripts": {
-    "build": "browserify src/index.js -s collide > collide-io.js"
+    "build": "browserify src/index.js -s collide > collide.js"
   },
   "dependencies": {
     "events": "^1.0.1",
