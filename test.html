@@ -67,9 +67,8 @@
         <button ng-click="do('cubic-bezier')">cubic-bezier</button>
         </p>
         <p>
-          <button ng-click="togglePause()">Toggle Pause/Play</button>
-          <button ng-click="stop()">Stop</button>
-          <button ng-click="restart()">Restart</button>
+          <button ng-click="currentAnimation.isPlaying() && currentAnimation.pause() || currentAnimation.play()">Toggle Pause/Play</button>
+          <button ng-click="currentAnimation.percent(0.5)">Start Over</button>
         </p>
       </div>
       {{animationResult}}
@@ -101,7 +100,6 @@
         }
         var el = angular.element(document.querySelector('.box'));
         $scope.do = function(fn) {
-          console.log(fn);
           if(fn == 'cubic-bezier') {
             fn = 'cubic-bezier(' +
                 $scope.anim.bx1 + ',' +
@@ -135,7 +133,7 @@
             });
           }
 
-          currentAnimation = collide.Animator(currentAnimationConfig)
+          $scope.currentAnimation = currentAnimation = collide.Animator(currentAnimationConfig)
             .on('complete', function() {
               console.log('Done.');
             })
@@ -145,19 +143,6 @@
             })
             .play();
         }
-        $scope.togglePause = function() {
-          if(currentAnimation.isPlaying) {
-            currentAnimation.pause();
-          } else {
-            currentAnimation.play();
-          }
-        };
-        $scope.stop = function() {
-          currentAnimation.cancel();
-        };
-        $scope.restart = function() {
-          currentAnimation.pause().percent(0).start();
-        };
       });
     </script>
   </body>

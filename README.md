@@ -44,12 +44,11 @@ animator.percent(newPercent); //setter
 animator.reverse(isReverse); //setter
 animator.autoReverse(isAutoReverse); //setter
 animator.repeat(repeatCount); //setter
-animator.isReverse; //boolean property
-animator.isPlaying; //boolean property
-animator.isAutoReverse; //boolean property
-animator.repeatCount; //Number property
 
-animator.percent(0).pause(); //everything is chainable
+animator.isReverse(); //boolean getter
+animator.isPlaying(); //boolean getter
+
+animator.percent(0).pause(); //chainable
 ```
 
 ### Examples

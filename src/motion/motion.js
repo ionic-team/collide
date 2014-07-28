@@ -21,7 +21,6 @@ module.exports = {
     // Mark as running
     running[id] = true;
 
-    instance.isRunning = true;
     instance._animationId = id;
 
     // Return unique animation ID
@@ -29,7 +28,6 @@ module.exports = {
   },
 
   animationStopped: function(instance) {
-    instance.isRunning = false;
   },
 
   /* TODO: Move animation set management here instead of instance

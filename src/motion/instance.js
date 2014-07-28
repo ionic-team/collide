@@ -17,6 +17,8 @@ var allowedEvents = [
   'start'
 ];
 
+function isNumber(value){return typeof value === 'number';}
+
 module.exports = Animation;
 
 function Animation(opts) {
@@ -50,23 +52,20 @@ Animation.prototype = {
   // Overridable
   step: function(percent) {},
 
-  setPercent: function(percent, doesSetState) {
-    this.pause();
-
+  setPercent: function(percent) {
     var v = this.easingFn(percent);
-
-    // Check if we should change any internal saved state (to resume
-    // from this value later on, for example. Defaults to true)
-    if(doesSetState !== false && this._pauseState) {
-      // Not sure yet on this
-    }
-
     this.step(v);
-    //var value = easingMethod ? easingMethod(percent) : percent;
+
+    this._nextStartPercent = percent;
+    if (this.isRunning) {
+      this.restart();
+    }
   },
   stop: function() {
     this.isRunning = false;
-    this.shouldEnd = true;
+    raf.cancel(this._rafId);
+    this._runStep && this._runStep();
+    this._runStep = null;
   },
   play: function() {
     this.isPaused = false;
@@ -87,22 +86,23 @@ Animation.prototype = {
     raf.cancel(this._rafId);
   },
   restart: function() {
-    var self = this;
-
-    this.isRunning = false;
-
-    // TODO: Verify this isn't totally stupid
-    this._rafId = raf(function() {
-      self.start();
-    });
+    this.stop();
+    this.start();
   },
-
   start: function() {
     var self = this;
 
+    var startPercent;
+    if (isNumber(this._nextStartPercent)) {
+      startPercent = this._nextStartPercent;
+      this._nextStartPercent = null;
+    } else {
+      startPercent = this.reverse === true ? 1 : 0;
+    }
+
     // Set up the initial animation state
     var animState = {
-      startPercent: this.reverse === true ? 1 : 0,
+      startPercent: startPercent,
       endPercent: this.reverse === true ? 0 : 1,
       duration: this.duration,
       easingMethod: this.easingFn,
@@ -112,15 +112,16 @@ Animation.prototype = {
       autoReverse: this.autoReverse,
       dynamic: this.dynamic
     };
+    console.log('starting');
 
-    motion.animationStarted(this);
+    this.isRunning = true;
 
-    return this._run(function(percent, now, render) {
+    this._runStep = this._run(function(percent, now, render) {
       if(render) {
         self.step(percent);
       }
     }, function(droppedFrames, animationId, finishedAnimation) {
-      motion.animationStopped(self);
+      self.isRunning = false;
       self.onComplete && self.onComplete(finishedAnimation, droppedFrames);
       console.log('Finished anim:', droppedFrames, finishedAnimation);
     }, animState);
@@ -203,10 +204,8 @@ Animation.prototype = {
       }
 
       if (!self.isRunning) {
-
         completedCallback && completedCallback(desiredFrames - (dropCounter / ((now - start) / millisecondsPerSecond)), self._animationId, false);
         return;
-
       }
 
 
@@ -228,7 +227,7 @@ Animation.prototype = {
 
       // Compute percent value
       if (diff > delay && duration) {
-        percent = (diff - delay) / duration;
+        percent = startPercent + (diff - delay) / duration;
 
         // If we are animating in the opposite direction,
         // the percentage is 1 minus this perc val
@@ -279,5 +278,6 @@ Animation.prototype = {
     // Init first step
     self._rafId = raf(step);
 
+    return step;
   }
 };

@@ -5,8 +5,6 @@ var Motion = require('./motion/instance');
 var Promise = require('promiscuous');
 var extend = require('node.extend');
 
-function noop(){}
-
 module.exports = CollideAnimator;
 
 function CollideAnimator(config) {
@@ -30,25 +28,20 @@ function CollideAnimator(config) {
     //Functions
     autoReverse: autoReverse,
     cancel: cancel,
+    isPlaying: isPlaying,
+    isReverse: isReverse,
     on: onWithTypeCheck(emitter.on),
     once: onWithTypeCheck(emitter.once),
     pause: pause,
     percent: percent,
     play: play,
     promise: promise,
-    repeat: repeat,
-    reverse: noop,
-
-    //Properties
-    isPlaying: false,
-    isReverse: motion.reverse,
-    isAutoReverse: false,
-    repeatCount: -1
+    reverse: reverse,
   };
 
   function onMotionStep(v) {
     emitter.emit('step', v);
-    if ((v === 0 && self.isReverse) || v === 1)  {
+    if ((v === 1 && self.isReverse) || v === 0)  {
       emitter.emit('start');
     }
   }
@@ -73,14 +66,19 @@ function CollideAnimator(config) {
     emitter.emit('complete', true);
     emitter.emit('cancel');
     emitter.removeAllListeners();
-    self.isPlaying = false;
     return self;
+  }
+
+  function isPlaying() {
+    return motion.isRunning && !motion.isPaused;
+  }
+  function isReverse() {
+    return motion.reverse;
   }
 
   function pause() {
     motion.pause();
     emitter.emit('pause');
-    self.isPlaying = false;
     return self;
   }
   
@@ -93,10 +91,9 @@ function CollideAnimator(config) {
     if (motion.isPaused) {
       motion.play();
     } else {
-      motion.start();
+      motion.restart();
     }
     emitter.emit('play');
-    self.isPlaying = true;
     return self;
   }
 
@@ -130,17 +127,12 @@ function CollideAnimator(config) {
   }
 
   function reverse(isReverse) {
-    motion.reverse = self.isReverse = !!isReverse;
+    motion.reverse = !!isReverse;
     return self;
   }
 
   function autoReverse(isAutoReverse) {
     motion.autoReverse = self.autoReverse = !!isAutoReverse;
-    return self;
-  }
-
-  function repeat(n) {
-    motion.repeat = self.repeatCount = n;
     return self;
   }
 }
