@@ -23,6 +23,7 @@ COMING SOON:
 - `npm install -g browserify`
 - `npm run build`
 - Generated file `dist/collide.js` is require/CommonJS/window friendly. If you include it, it will be included as `window.collide`.
+- Note: the `collide.js` found in project root is only updated on release. The built version in dist is not added to git and should be used while developing.
 
 ### API (quickly changing)
 
