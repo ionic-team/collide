@@ -1,0 +1,8 @@
+{
+  "name": "collide",
+  "version": "0.0.4",
+  "ignore": [
+    "src"
+  ],
+  "dependencies": {}
+}
