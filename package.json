@@ -3,7 +3,7 @@
   "version": "0.0.4",
   "main": "collide.js",
   "scripts": {
-    "build": "browserify src/index.js -s collide > collide.js"
+    "build": "mkdir -p dist && browserify src/index.js -s collide > dist/collide.js"
   },
   "dependencies": {
     "events": "^1.0.1",

@@ -27,3 +27,6 @@ bower_components
 
 # Users Environment Variables
 .lock-wscript
+
+# Built files
+dist
