@@ -20,7 +20,11 @@ function CollideAnimator(config) {
   ];
   var emitter = new EventEmitter();
 
+  config = extend({
+    easing: 'linear'
+  }, config || {});
   config.step = onMotionStep;
+  config.repeat = 0;
   config.onComplete = onMotionComplete;
   var motion = createMotion(config);
 
@@ -62,8 +66,10 @@ function CollideAnimator(config) {
   }
 
   function cancel() {
-    motion.stop();
-    emitter.emit('complete', true);
+    if (self.isRunning) {
+      motion.stop();
+      emitter.emit('complete', true);
+    }
     emitter.emit('cancel');
     emitter.removeAllListeners();
     return self;

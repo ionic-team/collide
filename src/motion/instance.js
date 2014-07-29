@@ -276,6 +276,7 @@ Animation.prototype = {
 
 
     // Init first step
+    step();
     self._rafId = raf(step);
 
     return step;

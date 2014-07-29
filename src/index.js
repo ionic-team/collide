@@ -1,7 +1,7 @@
-
-var Animator = require('./animator');
+var animation = require('./animation');
 
 module.exports = {
-  Animator: Animator,
+  animation: animation.animation,
+  tweenAnimation: animation.tweenAnimation,
   dynamics: require('./motion/dynamics')
 };

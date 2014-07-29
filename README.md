@@ -28,6 +28,12 @@ COMING SOON:
 ### API (quickly changing)
 
 ```js
+var animation = collide.Animation({
+  duration: 1000,
+  easing: 'ease-in-out'
+});
+var tweenAnimation = collide.TweenAnimation({
+  opacity: 0,
 var animator = collide.Animator({
   duration: 1000,
   easing: 'ease-in-out'
@@ -46,10 +52,12 @@ animator.reverse(isReverse); //setter
 animator.autoReverse(isAutoReverse); //setter
 animator.repeat(repeatCount); //setter
 
+animator.percent(0).pause(); //chainable
+
+//Getters
 animator.isReverse(); //boolean getter
 animator.isPlaying(); //boolean getter
 
-animator.percent(0).pause(); //chainable
 ```
 
 ### Examples

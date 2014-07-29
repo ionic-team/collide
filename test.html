@@ -6,7 +6,6 @@
 
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
-    <script src="collide.js"></script>
     <style>
       .box {
         position: absolute;
@@ -19,7 +18,7 @@
       }
       #opts {
         position: absolute;
-        top: 400px;
+        top: 200px;
         left: 10px;
       }
     </style>
@@ -30,7 +29,7 @@
 
     <div ng-controller="MyCtrl">
       <div class="box"></div>
-      <div class="box" id="draggable"></div>
+      <!-- <div class="box" id="draggable"></div> -->
       <div id="opts">
         <label>
           Duration:
@@ -74,6 +73,7 @@
       {{animationResult}}
     </div>
 
+    <script src="dist/collide.js"></script>
     <script>
       angular.module('myApp', [])
       .controller('MyCtrl', function($scope) {
@@ -88,7 +88,7 @@
           'ease-in-out'
         ];
         $scope.anim = {
-          duration: 2000,
+          duration: 1000,
           delay: 0,
           repeat: 0,
           reverse: false,
@@ -109,7 +109,7 @@
           }
           currentAnimationConfig = angular.extend({
             name: 'fadeIn',
-            duration: 2000,
+            duration: 1500,
             delay: 500,
             autoReverse: false,
             repeat: 0,
@@ -133,12 +133,12 @@
             });
           }
 
-          $scope.currentAnimation = currentAnimation = collide.Animator(currentAnimationConfig)
+          $scope.currentAnimation = currentAnimation = collide.animation(currentAnimationConfig)
             .on('complete', function() {
               console.log('Done.');
             })
             .on('step', function(v) {
-              el[0].style.webkitTransform = 'translate3d(' + (v * 400) + 'px, 0,0)';
+              el[0].style.webkitTransform = 'translate3d(' + (v * 180) + 'px, 0,0)';
               //console.log('step', arguments);
             })
             .play();
