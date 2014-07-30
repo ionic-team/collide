@@ -40,7 +40,6 @@ function Animator(opts) {
   opts.easing && this.easing(opts.easing);
   opts.iterations && this.iterations(opts.iterations);
   opts.direction && this.direction(opts.direction);
-  opts.dynamic && this.dynamic(opts.dynamic);
 
   var emitter = this._.emitter = new EventEmitter();
   this._.onDestroy = function() {
@@ -71,10 +70,6 @@ Animator.prototype = {
       this._.iterations = iterations;
     }
     return this._.iterations;
-  },
-
-  dynamic: function(dynamic) {
-    return this._.dynamic;
   },
 
   easing: function(easing) {
@@ -231,9 +226,6 @@ Animator.prototype = {
     }
   },
 };
-
-function figureOutDynamic(dynamicOpts) {
-}
 
 // TODO delay repeat direction
 function figureOutEasing(easing) {
