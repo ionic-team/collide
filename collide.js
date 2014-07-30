@@ -1,8 +1,103 @@
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.collide=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+/* jshint node: true */
+/* global window: false */
+/* global document: false */
+'use strict';
+
+// list prefixes and case transforms
+// (reverse order as a decrementing for loop is used)
+var prefixes = [
+  'ms',
+  'ms', // intentional: 2nd entry for ms as we will also try Pascal case for MS
+  'O',
+  'Moz',
+  'Webkit',
+  ''
+];
+
+var caseTransforms = [
+  toCamelCase,
+  null,
+  null,
+  toCamelCase,
+  null,
+  toCamelCase
+];
+
+var props = {};
+var style;
+
+/**
+  ### css(prop)
+
+  Test for the prescence of the specified CSS property (in all it's
+  possible browser prefixed variants).  The returned function (if we
+  are able to access the required style property) is both a getter and
+  setter function for when given an element.
+
+  Consider the following example, with regards to CSS transforms:
+
+  <<< examples/transform.js
+
+**/
+module.exports = function(prop) {
+  var ii;
+  var propName;
+  var pascalCaseName;
+
+  style = style || document.body.style;
+
+  // if we already have a value for the target property, return
+  if (props[prop] || style[prop]) {
+    return props[prop];
+  }
+
+  // convert a dash delimited propertyname (e.g. box-shadow) into
+  // pascal cased name (e.g. BoxShadow)
+  pascalCaseName = prop.split('-').reduce(function(memo, val) {
+    return memo + val.charAt(0).toUpperCase() + val.slice(1);
+  }, '');
+
+  // check for the property
+  for (ii = prefixes.length; ii--; ) {
+    propName = prefixes[ii] + (caseTransforms[ii] ?
+                  caseTransforms[ii](pascalCaseName) :
+                  pascalCaseName);
+
+    if (typeof style[propName] != 'undefined') {
+      props[prop] = createGetterSetter(propName);
+      break;
+    }
+  }
+
+  return props[prop];
+};
+
+/* internal helper functions */
+
+function createGetterSetter(propName) {
+  function gs(element, value) {
+    // if we have a value update
+    if (typeof value != 'undefined') {
+      element.style[propName] = value;
+    }
+
+    return window.getComputedStyle(element)[propName];
+  }
+
+  // attach the property name to the getter and setter
+  gs.property = propName;
+  return gs;
+}
+
+function toCamelCase(input) {
+  return input.charAt(0).toLowerCase() + input.slice(1);
+}
+},{}],2:[function(_dereq_,module,exports){
 module.exports = _dereq_('./lib/extend');
 
 
-},{"./lib/extend":2}],2:[function(_dereq_,module,exports){
+},{"./lib/extend":3}],3:[function(_dereq_,module,exports){
 /*!
  * node.extend
  * Copyright 2011, John Resig
@@ -86,7 +181,7 @@ extend.version = '1.0.8';
 module.exports = extend;
 
 
-},{"is":3}],3:[function(_dereq_,module,exports){
+},{"is":4}],4:[function(_dereq_,module,exports){
 
 /**!
  * is
@@ -800,135 +895,6 @@ is.string = function (value) {
 };
 
 
-},{}],4:[function(_dereq_,module,exports){
-/**@license MIT-promiscuous-©Ruben Verborgh*/
-(function (func, obj) {
-  // Type checking utility function
-  function is(type, item) { return (typeof item)[0] == type; }
-
-  // Creates a promise, calling callback(resolve, reject), ignoring other parameters.
-  function Promise(callback, handler) {
-    // The `handler` variable points to the function that will
-    // 1) handle a .then(resolved, rejected) call
-    // 2) handle a resolve or reject call (if the first argument === `is`)
-    // Before 2), `handler` holds a queue of callbacks.
-    // After 2), `handler` is a finalized .then handler.
-    handler = function pendingHandler(resolved, rejected, value, queue, then, i) {
-      queue = pendingHandler.q;
-
-      // Case 1) handle a .then(resolved, rejected) call
-      if (resolved != is) {
-        return Promise(function (resolve, reject) {
-          queue.push({ p: this, r: resolve, j: reject, 1: resolved, 0: rejected });
-        });
-      }
-
-      // Case 2) handle a resolve or reject call
-      // (`resolved` === `is` acts as a sentinel)
-      // The actual function signature is
-      // .re[ject|solve](<is>, success, value)
-
-      // Check if the value is a promise and try to obtain its `then` method
-      if (value && (is(func, value) | is(obj, value))) {
-        try { then = value.then; }
-        catch (reason) { rejected = 0; value = reason; }
-      }
-      // If the value is a promise, take over its state
-      if (is(func, then)) {
-        function valueHandler(resolved) {
-          return function (value) { then && (then = 0, pendingHandler(is, resolved, value)); };
-        }
-        try { then.call(value, valueHandler(1), rejected = valueHandler(0)); }
-        catch (reason) { rejected(reason); }
-      }
-      // The value is not a promise; handle resolve/reject
-      else {
-        // Replace this handler with a finalized resolved/rejected handler
-        handler = function (Resolved, Rejected) {
-          // If the Resolved or Rejected parameter is not a function,
-          // return the original promise (now stored in the `callback` variable)
-          if (!is(func, (Resolved = rejected ? Resolved : Rejected)))
-            return callback;
-          // Otherwise, return a finalized promise, transforming the value with the function
-          return Promise(function (resolve, reject) { finalize(this, resolve, reject, value, Resolved); });
-        };
-        // Resolve/reject pending callbacks
-        i = 0;
-        while (i < queue.length) {
-          then = queue[i++];
-          // If no callback, just resolve/reject the promise
-          if (!is(func, resolved = then[rejected]))
-            (rejected ? then.r : then.j)(value);
-          // Otherwise, resolve/reject the promise with the result of the callback
-          else
-            finalize(then.p, then.r, then.j, value, resolved);
-        }
-      }
-    };
-    // The queue of pending callbacks; garbage-collected when handler is resolved/rejected
-    handler.q = [];
-
-    // Create and return the promise (reusing the callback variable)
-    callback.call(callback = { then:  function (resolved, rejected) { return handler(resolved, rejected); },
-                               catch: function (rejected)           { return handler(0,        rejected); } },
-                  function (value)  { handler(is, 1,  value); },
-                  function (reason) { handler(is, 0, reason); });
-    return callback;
-  }
-
-  // Finalizes the promise by resolving/rejecting it with the transformed value
-  function finalize(promise, resolve, reject, value, transform) {
-    setImmediate(function () {
-      try {
-        // Transform the value through and check whether it's a promise
-        value = transform(value);
-        transform = value && (is(obj, value) | is(func, value)) && value.then;
-        // Return the result if it's not a promise
-        if (!is(func, transform))
-          resolve(value);
-        // If it's a promise, make sure it's not circular
-        else if (value == promise)
-          reject(TypeError());
-        // Take over the promise's state
-        else
-          transform.call(value, resolve, reject);
-      }
-      catch (error) { reject(error); }
-    });
-  }
-
-  // Export the main module
-  module.exports = Promise;
-
-  // Creates a resolved promise
-  Promise.resolve = ResolvedPromise;
-  function ResolvedPromise(value) { return Promise(function (resolve) { resolve(value); }); }
-
-  // Creates a rejected promise
-  Promise.reject = function (reason) { return Promise(function (resolve, reject) { reject(reason); }); };
-
-  // Transforms an array of promises into a promise for an array
-  Promise.all = function (promises) {
-    return Promise(function (resolve, reject, count, values) {
-      // Array of collected values
-      values = [];
-      // Resolve immediately if there are no promises
-      count = promises.length || resolve(values);
-      // Transform all elements (`map` is shorter than `forEach`)
-      promises.map(function (promise, index) {
-        ResolvedPromise(promise).then(
-          // Store the value and resolve if it was the last
-          function (value) {
-            values[index] = value;
-            --count || resolve(values);
-          },
-          // Reject if one element fails
-          reject);
-      });
-    });
-  };
-})('f', 'o');
-
 },{}],5:[function(_dereq_,module,exports){
 var now = _dereq_('performance-now')
   , global = typeof window === 'undefined' ? {} : window
@@ -1035,180 +1001,330 @@ module.exports.cancel = function() {
 */
 
 }).call(this,_dereq_("qhDIRT"))
-},{"qhDIRT":15}],7:[function(_dereq_,module,exports){
+},{"qhDIRT":20}],7:[function(_dereq_,module,exports){
 
-var easingFn = _dereq_('./motion/easing-functions');
-var EventEmitter = _dereq_('events');
-var Motion = _dereq_('./motion/instance');
-var Promise = _dereq_('promiscuous');
 var extend = _dereq_('node.extend');
+var EventEmitter = _dereq_('events');
+var cssFeature = _dereq_('feature/css');
 
-module.exports = CollideAnimator;
+var timeline = _dereq_('./core/timeline');
+var dynamics = _dereq_('./core/dynamics');
+var interpolate = _dereq_('./core/interpolate');
+var easingFunctions = _dereq_('./core/easing-functions');
+var uid = _dereq_('./util/uid');
 
-function CollideAnimator(config) {
-  var self;
-  var eventTypes = [
-    'step',
-    'pause', 
-    'cancel', 
-    'play', 
-    'complete', //complete callback is passed boolean wasCancelled
-    'start', 
-    'error'
-  ];
-  var emitter = new EventEmitter();
+function clamp(min, n, max) { return Math.max(min, Math.min(n, max)); }
+function isString(value){return typeof value === 'string';}
+function isNumber(value){return typeof value === 'number';}
 
-  config.step = onMotionStep;
-  config.onComplete = onMotionComplete;
-  var motion = createMotion(config);
+module.exports = Animator;
 
-  return self = {
-    //Functions
-    autoReverse: autoReverse,
-    cancel: cancel,
-    isPlaying: isPlaying,
-    isReverse: isReverse,
-    on: onWithTypeCheck(emitter.on),
-    once: onWithTypeCheck(emitter.once),
-    pause: pause,
-    percent: percent,
-    play: play,
-    promise: promise,
-    reverse: reverse,
+function Animator(opts) {
+  //if `new` keyword isn't provided, do it for user
+  if (!(this instanceof Animator)) {
+    return new Animator(opts);
+  }
+
+  opts = opts || {};
+
+  //Everything private goes in `this._`
+  this._ = {
+    id: uid(),
+    percent: 0,
+    duration: 500,
+    iterations: 1,
+    direction: {
+      reverse: false,
+      alternate: false
+    }
   };
 
-  function onMotionStep(v) {
+  opts.duration && this.duration(opts.duration);
+  opts.percent && this.percent(opts.percent);
+  opts.easing && this.easing(opts.easing);
+  opts.iterations && this.iterations(opts.iterations);
+  opts.direction && this.direction(opts.direction);
+
+  var emitter = this._.emitter = new EventEmitter();
+  this._.onDestroy = function() {
+    emitter.emit('destroy');
+  };
+  this._.onStop = function(wasCompleted) {
+    emitter.emit('stop', wasCompleted);
+  };
+  this._.onStart = function() {
+    emitter.emit('start');
+  };
+  this._.onStep = function(v) {
     emitter.emit('step', v);
-    if ((v === 1 && self.isReverse) || v === 0)  {
-      emitter.emit('start');
-    }
-  }
+  };
+}
 
-  function onMotionComplete(didFinish) {
-    var wasCancelled = !didFinish;
-    emitter.emit('complete', wasCancelled);
-  }
-  
-  function onWithTypeCheck(emitterFn) {
-    return function addEventListener(eventType, listener) {
-      if (eventTypes.indexOf(eventType) === -1) {
-        throw new Error('bad eventType ' + eventType);
+Animator.prototype = {
+
+  direction: function(direction) {
+    if (arguments.length && isString(direction)) {
+      this._.direction = figureOutDirection(direction);
+    }
+    return this._.direction;
+  },
+
+  iterations: function(iterations) {
+    if (arguments.length && isNumber(iterations)) {
+      this._.iterations = iterations;
+    }
+    return this._.iterations;
+  },
+
+  easing: function(easing) {
+    var type = typeof easing;
+    if (arguments.length &&
+        (type === 'function' || type === 'string' || type === 'object')) {
+      this._.easing = figureOutEasing(easing);
+    }
+    return this._.easing;
+  },
+
+  percent: function(percent) {
+    if (arguments.length && isNumber(percent)) {
+      this._.percent = clamp(0, percent, 1);
+
+      if (!this._.isRunning) {
+        this._.onStep(this._getValueForPercent(this._.percent));
       }
-      emitterFn.call(emitter, eventType, listener);
-      return self;
-    };
-  }
-
-  function cancel() {
-    motion.stop();
-    emitter.emit('complete', true);
-    emitter.emit('cancel');
-    emitter.removeAllListeners();
-    return self;
-  }
-
-  function isPlaying() {
-    return motion.isRunning && !motion.isPaused;
-  }
-  function isReverse() {
-    return motion.reverse;
-  }
-
-  function pause() {
-    motion.pause();
-    emitter.emit('pause');
-    return self;
-  }
-  
-  function percent(n) {
-    motion.setPercent(n);
-    return self;
-  }
-
-  function play() {
-    if (motion.isPaused) {
-      motion.play();
-    } else {
-      motion.restart();
     }
-    emitter.emit('play');
-    return self;
-  }
+    return this._.percent;
+  },
 
-  function promise() {
-    //On completion: resolve with true
-    //On pause: resolve with false 
-    //On cancel: reject
-    //myAnimator.promise().then(function onStop(wasCompleted) {
-    //});
-    return new Promise(function(resolve, reject) {
-      emitter.on('complete', onComplete);
-      emitter.on('pause', onPause);
+  duration: function(duration) {
+    if (arguments.length && isNumber(duration)) {
+      this._.duration = Math.max(1, duration);
+    }
+    return this._.duration;
+  },
 
-      function onComplete(wasCancelled) {
-        if (wasCancelled) {
-          reject();
-        } else {
-          resolve(true);
+  addInterpolation: function(el, startingStyles, endingStyles) {
+    var interpolators;
+    if (arguments.length) {
+      syncStyles(startingStyles, endingStyles, window.getComputedStyle(el));
+      interpolators = makePropertyInterpolators(startingStyles, endingStyles);
+
+      this.on('step', setStyles);
+      return function unbind() {
+        this.removeListener('step', setStyles);
+      };
+    }
+    function setStyles(v) {
+      for (var property in interpolators) {
+        el.style[property] = interpolators[property](v);
+      }
+    }
+  },
+
+  isRunning: function() { 
+    return !!this._.isRunning; 
+  },
+
+  on: function(eventType, listener) {
+    this._.emitter.on(eventType, listener);
+    return this;
+  },
+  once: function(eventType, listener) {
+    this._.emitter.once(eventType, listener);
+    return this;
+  },
+  removeListener: function(eventType, listener) {
+    this._.emitter.removeListener(eventType, listener);
+    return this;
+  },
+  removeAllListeners: function() {
+    this._.emitter.removeAllListeners();
+    return this;
+  },
+
+  destroy: function() {
+    this.stop();
+    this.onDestroy();
+    this._.emitter.removeAllListeners();
+    return this;
+  },
+
+  stop: function() {
+    if (!this._.isRunning) return;
+
+    this._.isRunning = false;
+    timeline.animationStopped(this);
+
+    this._.onStop(this._isComplete());
+    return this;
+  },
+
+  start: function(shouldRenderImmediately) {
+    if (this._.isRunning) return;
+
+    //If we're done, start animation over
+    if (this._isComplete()) {
+      this._.percent = this._getStartPercent();
+      this._.iterationsRemaining = this._.iterations;
+    }
+
+    if (shouldRenderImmediately) {
+      this._.onStep(this._getValueForPercent(this._.percent));
+      this._.noProgressionFirstTick = false;
+    } else {
+      // Otherwise, the first tick makes no progress
+      this._.noProgressionFirstTick = true;
+    }
+
+    this._.isRunning = true;
+    timeline.animationStarted(this);
+
+    this._.onStart();
+    return this;
+  },
+
+  _isComplete: function() {
+    return !this._.isRunning && 
+      this._.percent === this._getEndPercent() &&
+      !this._.iterationsRemaining;
+  },
+  _getEndPercent: function() {
+    return this._.direction.reverse ? 0 : 1;
+  },
+  _getStartPercent: function() {
+    return this._.direction.reverse ? 1 : 0;
+  },
+
+  _getValueForPercent: function(percent) {
+    if (this._.easing) {
+      return this._.easing(percent, this._.duration);
+    }
+    return percent;
+  },
+
+  _tick: function(deltaT) {
+    var state = this._;
+
+    if (state.noProgressionFirstTick) {
+      //On first tick, do not change the percent
+      state.noProgressionFirstTick = false;
+    } else if (state.direction.reverse) {
+      state.percent = Math.max(0, state.percent - (deltaT / state.duration));
+    } else {
+      state.percent = Math.min(1, state.percent + (deltaT / state.duration));
+    }
+
+    state.onStep(this._getValueForPercent(state.percent));
+
+    if (state.percent === this._getEndPercent()) {
+      state.iterationsRemaining = Math.max(state.iterationsRemaining - 1, 0);
+      //Repeat if needed
+      if (state.iterationsRemaining) {
+        if (state.direction.alternate) {
+          state.direction.reverse = !state.direction.reverse;
         }
-        cleanup();
+        state.percent = this._getStartPercent();
+      } else {
+        this.stop();
       }
-      function onPause() {
-        resolve();
-        cleanup();
-      }
-      function cleanup() {
-        emitter.removeListener('complete', onComplete);
-        emitter.removeListener('pause', onPause);
-      }
-    });
-  }
-
-  function reverse(isReverse) {
-    motion.reverse = !!isReverse;
-    return self;
-  }
-
-  function autoReverse(isAutoReverse) {
-    motion.autoReverse = self.autoReverse = !!isAutoReverse;
-    return self;
-  }
-}
-
-
-function createMotion(opts) {
-  if(typeof opts.easing === 'string') {
-    tf = easingFn[opts.easing] || easingFn.linear;
-    if(opts.easing.indexOf('cubic-bezier(') >= 0) {
-      var parts = opts.easing.replace('cubic-bezier(', '').replace(')', '').split(',');
-      tf = easingFn['cubic-bezier'];
-      tf = tf(parts[0], parts[1], parts[2], parts[3], opts.duration);
-    } else {
-      tf = tf(opts.duration);
     }
-  } else {
-    tf = opts.easing;
-    tf = tf(opts.duration);
-  }
-
-  opts.easingFn = tf;
-
-  if(opts.dynamicsType) {
-    opts.dynamic = new opts.dynamicsType(opts);
-  }
-  return new Motion(opts);
-}
-
-},{"./motion/easing-functions":11,"./motion/instance":12,"events":14,"node.extend":1,"promiscuous":4}],8:[function(_dereq_,module,exports){
-
-var Animator = _dereq_('./animator');
-
-module.exports = {
-  Animator: Animator,
-  dynamics: _dereq_('./motion/dynamics')
+  },
 };
 
-},{"./animator":7,"./motion/dynamics":10}],9:[function(_dereq_,module,exports){
+function figureOutEasing(easing) {
+  if (typeof easing === 'object') {
+    var dynamicType = isString(easing.type) && easing.type.toLowerCase().trim();
+
+    if (!dynamics[dynamicType]) {
+      throw new Error(
+        'Invalid easing dynamics object type "' + easing.type + '". ' +
+        'Available dynamics types: ' + Object.keys(dynamics).join(', ') + '.'
+      );
+    }
+    return dynamics[dynamicType](easing);
+
+  } else if (typeof easing === 'string') {
+    easing = easing.toLowerCase().trim();
+    
+    if (easing.indexOf('cubic-bezier(') === 0) {
+      var parts = easing
+        .replace('cubic-bezier(', '')
+        .replace(')', '')
+        .split(',')
+        .map(function(v) {
+          return v.trim();
+        });
+      return easingFunctions['cubic-bezier'](parts[0], parts[1], parts[2], parts[3]);
+    } else {
+      var fn = easingFunctions[easing];
+      if (!fn) {
+        throw new Error(
+          'Invalid easing function "' + easing + '". ' +
+          'Available easing functions: ' + Object.keys(easingFunctions).join(', ') + '.'
+        );
+      }
+      return easingFunctions[easing]();
+    }
+  } else if (typeof easing === 'function') {
+    return easing;
+  }
+}
+
+function figureOutDirection(direction) {
+  direction = direction.trim().toLowerCase();
+  if (/normal|reverse|alternate|alternate-?reverse/.test(direction)) {
+    return {
+      alternate: direction.indexOf('alternate') !== -1,
+      reverse: direction.indexOf('reverse') !== -1
+    };
+  } else {
+    throw new Error(
+      'Invalid direction "' + opts.direction + '". ' +
+      'Available directions: normal, reverse, alternate, alternate-reverse'
+    );
+  }
+}
+
+/*
+ * Tweening helpers
+ */
+function syncStyles(startingStyles, endingStyles, computedStyle) {
+  var property;
+  for (property in startingStyles) {
+    if (!endingStyles.hasOwnProperty(property)) {
+      delete startingStyles[property];
+    }
+  }
+  for (property in endingStyles) {
+    if (!startingStyles.hasOwnProperty(property)) {
+      startingStyles[property] = computedStyle[vendorizePropertyName(property)];
+    }
+  }
+}
+
+function makePropertyInterpolators(startingStyles, endingStyles) {
+  var interpolators = {};
+  var property;
+  for (property in startingStyles) {
+    interpolators[vendorizePropertyName(property)] = interpolate.propertyInterpolator(
+      property, startingStyles[property], endingStyles[property]
+    );
+  }
+  return interpolators;
+}
+
+var transformProperty;
+function vendorizePropertyName(property) {
+  if (property === 'transform') {
+    //Set transformProperty lazily, to be sure DOM has loaded already when using it
+    return transformProperty || 
+      (transformProperty = cssFeature('transform').property);
+  } else {
+    return property;
+  }
+}
+
+},{"./core/dynamics":9,"./core/easing-functions":10,"./core/interpolate":13,"./core/timeline":16,"./util/uid":18,"events":19,"feature/css":1,"node.extend":2}],8:[function(_dereq_,module,exports){
 /*
  * Copyright (C) 2008 Apple Inc. All Rights Reserved.
  *
@@ -1471,7 +1587,7 @@ function unitBezier(p1x, p1y, p2x, p2y) {
 }
 
 
-},{}],10:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 /**
  * A HUGE thank you to dynamics.js which inspired these dynamics simulations.
  * https://github.com/michaelvillar/dynamics.js
@@ -1482,43 +1598,25 @@ function unitBezier(p1x, p1y, p2x, p2y) {
 var extend = _dereq_('node.extend');
 
 module.exports = {
-  Spring: DynamicsSpring,
-  Gravity: DynamicsGravity
+  spring: dynamicsSpring,
+  gravity: dynamicsGravity
 };
 
-function DynamicsSpring(opts) {
-  var defaults = {
-    frequency: 15,
-    friction: 200,
-    anticipationStrength: 0,
-    anticipationSize: 0
-  };
-  extend(this, defaults);
+var springDefaults = {
+  frequency: 15,
+  friction: 200,
+  anticipationStrength: 0,
+  anticipationSize: 0
+};
+function dynamicsSpring(opts) {
+  opts = extend({}, springDefaults, opts);
 
-  var maxs = {
-    frequency: 100,
-    friction: 1000,
-    anticipationStrength: 1000,
-    anticipationSize: 99
-  };
-
-  var mins = {
-    frequency: 0,
-    friction: 1,
-    anticipationStrength: 0,
-    anticipationSize: 0
-  };
-
-  extend(this, opts);
-}
-
-DynamicsSpring.prototype = {
-  at: function(t) {
+  return function at(t, duration) {
     var A, At, a, angle, b, decal, frequency, friction, frictionT, s, v, y0, yS,
-    _this = this;
-    frequency = Math.max(1, this.frequency);
-    friction = Math.pow(20, this.friction / 100);
-    s = this.anticipationSize / 100;
+    _opts = opts;
+    frequency = Math.max(1, opts.frequency);
+    friction = Math.pow(20, opts.friction / 100);
+    s = opts.anticipationSize / 100;
     decal = Math.max(0, s);
     frictionT = (t / (1 - s)) - (s / (1 - s));
     if (t < s) {
@@ -1529,7 +1627,7 @@ DynamicsSpring.prototype = {
         x1 = 0;
         b = (x0 - (M * x1)) / (x0 - x1);
         a = (M - b) / x0;
-        return (a * t * _this.anticipationStrength / 100) + b;
+        return (a * t * _opts.anticipationStrength / 100) + b;
       };
       yS = (s / (1 - s)) - (s / (1 - s));
       y0 = (0 / (1 - s)) - (s / (1 - s));
@@ -1547,32 +1645,33 @@ DynamicsSpring.prototype = {
     v = 1 - (At * Math.cos(angle));
     //return [t, v, At, frictionT, angle];
     return v;
-  }
-};
-
-function DynamicsGravity(opts) {
-  this.options = {
-    bounce: 40,
-    gravity: 1000,
-    initialForce: false
   };
-  extend(this.options, opts);
-  this.curves = [];
-  this.init();
 }
 
-DynamicsGravity.prototype = {
-  length: function() {
+var gravityDefaults = {
+  bounce: 40,
+  gravity: 1000,
+  initialForce: false
+};
+function dynamicsGravity(opts) {
+  opts = extend({}, gravityDefaults, opts);
+  var curves = [];
+
+  init();
+
+  return at;
+
+  function length() {
     var L, b, bounce, curve, gravity;
-    bounce = Math.min(this.options.bounce / 100, 80);
-    gravity = this.options.gravity / 100;
+    bounce = Math.min(opts.bounce / 100, 80);
+    gravity = opts.gravity / 100;
     b = Math.sqrt(2 / gravity);
     curve = {
       a: -b,
       b: b,
       H: 1
     };
-    if (this.options.initialForce) {
+    if (opts.initialForce) {
       curve.a = 0;
       curve.b = curve.b * 2;
     }
@@ -1585,25 +1684,26 @@ DynamicsGravity.prototype = {
       };
     }
     return curve.b;
-  },
-  init: function() {
+  }
+
+  function init() {
     var L, b, bounce, curve, gravity, _results;
 
-    L = this.length();
-    gravity = (this.options.gravity / 100) * L * L;
-    bounce = Math.min(this.options.bounce / 100, 80);
+    L = length();
+    gravity = (opts.gravity / 100) * L * L;
+    bounce = Math.min(opts.bounce / 100, 80);
     b = Math.sqrt(2 / gravity);
-    this.curves = [];
+    curves = [];
     curve = {
       a: -b,
       b: b,
       H: 1
     };
-    if (this.options.initialForce) {
+    if (opts.initialForce) {
       curve.a = 0;
       curve.b = curve.b * 2;
     }
-    this.curves.push(curve);
+    curves.push(curve);
     _results = [];
     while (curve.b < 1 && curve.H > 0.001) {
       L = curve.b - curve.a;
@@ -1612,38 +1712,39 @@ DynamicsGravity.prototype = {
         b: curve.b + L * bounce,
         H: curve.H * bounce * bounce
       };
-      _results.push(this.curves.push(curve));
+      _results.push(curves.push(curve));
     }
     return _results;
-  },
-  curve: function(a, b, H, t){
+  }
 
+  function calculateCurve(a, b, H, t){
     var L, c, t2;
     L = b - a;
     t2 = (2 / L) * t - 1 - (a * 2 / L);
     c = t2 * t2 * H - H + 1;
-    if (this.initialForce) {
+    if (opts.initialForce) {
       c = 1 - c;
     }
     return c;
-  },
-  at: function(t) {
+  }
+
+  function at(t, duration) {
     var bounce, curve, gravity, i, v;
-    bounce = this.options.bounce / 100;
-    gravity = this.options.gravity;
+    bounce = opts.bounce / 100;
+    gravity = opts.gravity;
     i = 0;
-    curve = this.curves[i];
+    curve = curves[i];
     while (!(t >= curve.a && t <= curve.b)) {
       i += 1;
-      curve = this.curves[i];
+      curve = curves[i];
       if (!curve) {
         break;
       }
     }
     if (!curve) {
-      v = this.options.initialForce ? 0 : 1;
+      v = opts.initialForce ? 0 : 1;
     } else {
-      v = this.curve(curve.a, curve.b, curve.H, t);
+      v = calculateCurve(curve.a, curve.b, curve.H, t);
     }
     //return [t, v];
     return v;
@@ -1651,425 +1752,669 @@ DynamicsGravity.prototype = {
 
 };
 
-},{"node.extend":1}],11:[function(_dereq_,module,exports){
+},{"node.extend":2}],10:[function(_dereq_,module,exports){
 var dynamics = _dereq_('./dynamics');
 var bezier = _dereq_('./bezier');
 
 module.exports = {
-  'spring': function(duration) {
-    return function(t) {
-      return dynamics.Spring(t, duration);
-    };
-  },
-  'gravity': function(duration) {
-    return function(t) {
-      return dynamics.Gravity(t, duration);
-    };
-  },
-  'linear': function(duration) {
-    return function(t) {
+  'linear': function() {
+    return function(t, duration) {
       return bezier.linear(t, duration);
     };
   },
-  'ease': function(duration) {
-    return function(t) {
+  'ease': function() {
+    return function(t, duration) {
       return bezier.ease(t, duration);
     };
   },
-  'ease-in': function(duration) {
-    return function(t) {
+  'ease-in': function() {
+    return function(t, duration) {
       return bezier.easeIn(t, duration);
     };
   },
-  'ease-out': function(duration) {
-    return function(t) {
+  'ease-out': function() {
+    return function(t, duration) {
       return bezier.easeOut(t, duration);
     };
   },
-  'ease-in-out': function(duration) {
-    return function(t) {
+  'ease-in-out': function() {
+    return function(t, duration) {
       return bezier.easeInOut(t, duration);
     };
   },
   'cubic-bezier': function(x1, y1, x2, y2, duration) {
     var bz = bezier.cubicBezier(x1, y1, x2, y2);//, t, duration);
-    return function(t) {
+    return function(t, duration) {
       return bz(t, duration);
     };
   }
 };
 
-},{"./bezier":9,"./dynamics":10}],12:[function(_dereq_,module,exports){
+},{"./bezier":8,"./dynamics":9}],11:[function(_dereq_,module,exports){
+/**
+ * Modified version of web-animations color-handler.js
+ */
 
-var extend = _dereq_('node.extend');
-var raf = _dereq_('raf');
-var motion = _dereq_('./motion');
-var easingFn = _dereq_('./easing-functions');
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+// limitations under the License.
 
-var time = Date.now || function() {
-  return +new Date();
+var numberHandler = _dereq_('./number-handler');
+
+module.exports = {
+  parseColor: parseColor,
+  mergeColors: mergeColors
 };
-var desiredFrames = 60;
-var millisecondsPerSecond = 1000;
-var allowedEvents = [
-  'pause', 
-  'cancel', 
-  'play', 
-  'complete', //complete callback is passed boolean didFinish
-  'start'
-];
 
-function isNumber(value){return typeof value === 'number';}
+var canvas = document.createElement('canvas');
+canvas.width = canvas.height = 1;
+var context = canvas.getContext('2d');
 
-module.exports = Animation;
-
-function Animation(opts) {
-  extend(this, opts);
+function parseColor(string) {
+  string = string.trim();
+  // The context ignores invalid colors
+  context.fillStyle = '#000';
+  context.fillStyle = string;
+  var contextSerializedFillStyle = context.fillStyle;
+  context.fillStyle = '#fff';
+  context.fillStyle = string;
+  if (contextSerializedFillStyle != context.fillStyle)
+    return;
+  context.fillRect(0, 0, 1, 1);
+  var pixelColor = context.getImageData(0, 0, 1, 1).data;
+  context.clearRect(0, 0, 1, 1);
+  var alpha = pixelColor[3] / 255;
+  return [pixelColor[0] * alpha, pixelColor[1] * alpha, pixelColor[2] * alpha, alpha];
 }
 
-Animation.prototype = {
-  clone: function() {
-    return new Animation({
-      easing: this.easing,
-      easingFn: this.easingFn,
-      duration: this.duration,
-      delay: this.delay,
-      repeat: this.repeat,
-      reverse: this.reverse,
-      autoReverse: this.autoReverse,
-      onComplete: this.onComplete,
-      step: this.step
-    });
-  },
-  easing: 'linear',
-  easingFn: easingFn.linear,
-  duration: 500,
-  delay: 0,
-  repeat: -1,
-  reverse: false,
-  autoReverse: false,
-
-  onComplete: function(didComplete, droppedFrames) {},
-
-  // Overridable
-  step: function(percent) {},
-
-  setPercent: function(percent) {
-    var v = this.easingFn(percent);
-    this.step(v);
-
-    this._nextStartPercent = percent;
-    if (this.isRunning) {
-      this.restart();
+function mergeColors(left, right) {
+  return [left, right, function(x) {
+    function clamp(v) {
+      return Math.max(0, Math.min(255, v));
     }
-  },
-  stop: function() {
-    this.isRunning = false;
-    raf.cancel(this._rafId);
-    this._runStep && this._runStep();
-    this._runStep = null;
-  },
-  play: function() {
-    this.isPaused = false;
-    if(this._lastStepFn) {
-      this._unpausedAnimation = true;
-      raf.cancel(this._rafId);
-      this._rafId = raf(this._lastStepFn);
+    if (x[3]) {
+      for (var i = 0; i < 3; i++)
+        x[i] = Math.round(clamp(x[i] / x[3]));
     }
-  },
-  pause: function() {
-    this.isPaused = true;
-  },
-  _saveState: function(now, closure) {
-    this._pauseState = {
-      pausedAt: now,
-    };
-    this._lastStepFn = closure;
-    raf.cancel(this._rafId);
-  },
-  restart: function() {
-    this.stop();
-    this.start();
-  },
-  start: function() {
-    var self = this;
+    x[3] = numberHandler.numberToString(clamp(x[3]));
+    return 'rgba(' + x.join(',') + ')';
+  }];
+}
 
-    var startPercent;
-    if (isNumber(this._nextStartPercent)) {
-      startPercent = this._nextStartPercent;
-      this._nextStartPercent = null;
+
+},{"./number-handler":14}],12:[function(_dereq_,module,exports){
+
+/**
+ * Modified version of web-animations dimension-handler
+ */
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+// limitations under the License.
+
+var numberHandler = _dereq_('./number-handler');
+
+var lengthUnits = 'px|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc';
+var parseLength = parseDimension.bind(null, new RegExp(lengthUnits, 'g'));
+var parseLengthOrPercent = parseDimension.bind(null, new RegExp(lengthUnits + '|%', 'g'));
+var parseAngle = parseDimension.bind(null, /deg|rad|grad|turn/g);
+
+module.exports = {
+  parseLength: parseLength,
+  parseLengthOrPercent: parseLengthOrPercent,
+  parseAngle: parseAngle,
+  mergeDimensions: mergeDimensions
+};
+
+function parseDimension(unitRegExp, string) {
+  string = string.trim().toLowerCase();
+
+  if (string == '0' && 'px'.search(unitRegExp) >= 0)
+    return {px: 0};
+
+  // If we have parenthesis, we're a calc and need to start with 'calc'.
+  if (!/^[^(]*$|^calc/.test(string))
+    return;
+
+  string = string.replace(/calc\(/g, '(');
+
+  // We tag units by prefixing them with 'U' (note that we are already
+  // lowercase) to prevent problems with types which are substrings of
+  // each other (although prefixes may be problematic!)
+  var matchedUnits = {};
+  string = string.replace(unitRegExp, function(match) {
+    matchedUnits[match] = null;
+    return 'U' + match;
+  });
+  var taggedUnitRegExp = 'U(' + unitRegExp.source + ')';
+
+  // Validating input is simply applying as many reductions as we can.
+  var typeCheck = string.replace(/[-+]?(\d*\.)?\d+/g, 'N')
+  .replace(new RegExp('N' + taggedUnitRegExp, 'g'), 'D')
+  .replace(/\s[+-]\s/g, 'O')
+  .replace(/\s/g, '');
+  var reductions = [/N\*(D)/g, /(N|D)[*/]N/g, /(N|D)O\1/g, /\((N|D)\)/g];
+  var i = 0;
+  while (i < reductions.length) {
+    if (reductions[i].test(typeCheck)) {
+      typeCheck = typeCheck.replace(reductions[i], '$1');
+      i = 0;
     } else {
-      startPercent = this.reverse === true ? 1 : 0;
+      i++;
     }
+  }
+  if (typeCheck != 'D')
+    return;
 
-    // Set up the initial animation state
-    var animState = {
-      startPercent: startPercent,
-      endPercent: this.reverse === true ? 0 : 1,
-      duration: this.duration,
-      easingMethod: this.easingFn,
-      delay: this.delay,
-      reverse: this.reverse,
-      repeat: this.repeat,
-      autoReverse: this.autoReverse,
-      dynamic: this.dynamic
-    };
-    console.log('starting');
+  for (var unit in matchedUnits) {
+    var result = eval(string.replace(new RegExp('U' + unit, 'g'), '').replace(new RegExp(taggedUnitRegExp, 'g'), '*0'));
+    if (!isFinite(result))
+      return;
+    matchedUnits[unit] = result;
+  }
+  return matchedUnits;
+}
 
-    this.isRunning = true;
+function mergeDimensions(left, right) {
+  var units = [], unit;
+  for (unit in left)
+    units.push(unit);
+  for (unit in right) {
+    if (units.indexOf(unit) < 0)
+      units.push(unit);
+  }
 
-    this._runStep = this._run(function(percent, now, render) {
-      if(render) {
-        self.step(percent);
-      }
-    }, function(droppedFrames, animationId, finishedAnimation) {
-      self.isRunning = false;
-      self.onComplete && self.onComplete(finishedAnimation, droppedFrames);
-      console.log('Finished anim:', droppedFrames, finishedAnimation);
-    }, animState);
-  },
-
-  /**
-   * Start the animation.
-   *
-   * @param stepCallback {Function} Pointer to function which is executed on every step.
-  *   Signature of the method should be `function(percent, now, virtual) { return continueWithAnimation; }`
-   * @param completedCallback {Function}
-   *   Signature of the method should be `function(droppedFrames, finishedAnimation) {}`
-   * @param duration {Integer} Milliseconds to run the animation
-   * @param easingMethod {Function} Pointer to easing function
-   *   Signature of the method should be `function(percent) { return modifiedValue; }`
-   * @return {Integer} Identifier of animation. Can be used to stop it any time.
-   */
-  _run: function(stepCallback, completedCallback, state) {
-    var self = this;
-    var start = time();
-    var lastFrame = start;
-    var startTime = start + state.delay;
-    var percent = state.startPercent;
-    var startPercent = state.startPercent;
-    var endPercent = state.endPercent;
-    var autoReverse = state.autoReverse;
-    var delay = state.delay;
-    var duration = state.duration;
-    var easingMethod = state.easingMethod;
-    var repeat = state.repeat;
-    var reverse = state.reverse;
-
-    var dropCounter = 0;
-    var iteration = 0;
-
-    var perhapsAutoreverse = function() {
-      // Check if we hit the end and should auto reverse
-      if(percent === endPercent && autoReverse) {
-        // Flip the start and end values
-        var sp = endPercent;
-        reverse = !reverse;
-        endPercent = startPercent;
-        startPercent = sp;
-
-        if(repeat === 0) {
-          autoReverse = false;
-        }
-      } else {
-        // Otherwise, just start over
-        percent = startPercent;
-      }
-      // Start fresh either way
-      start = time();
-      self._rafId = raf(step);
-    };
+  left = units.map(function(unit) { return left[unit] || 0; });
+  right = units.map(function(unit) { return right[unit] || 0; });
+  return [left, right, function(values) {
+    var result = values.map(function(value, i) {
+      // Scientific notation (e.g. 1e2) is not yet widely supported by browser vendors.
+      return numberHandler.numberToString(value) + units[i];
+    }).join(' + ');
+    return values.length > 1 ? 'calc(' + result + ')' : result;
+  }];
+}
 
 
-    // This is the internal step method which is called every few milliseconds
-    var step = function(virtual) {
-      var now = time();
 
-      if(self._unpausedAnimation) {
-        // We unpaused. Increase the start time to account
-        // for the gap in playback (to keep timing the same)
-        var t = self._pauseState.pausedAt;
-        start = start + (now - t);
-        lastFrame = now;
-      }
+},{"./number-handler":14}],13:[function(_dereq_,module,exports){
+/**
+ * Modified version of web-animations interpolate.js
+ */
 
-      // Normalize virtual value
-      var render = virtual !== true;
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+// limitations under the License.
 
-      // Get current time
-      var diff = now - start;
 
-      // Verification is executed before next animation step
-      if(self.isPaused) {
-        self._saveState(now, step);//percent, iteration, reverse);
+var colorHandler = _dereq_('./color-handler');
+var dimensionHandler = _dereq_('./dimension-handler');
+var numberHandler = _dereq_('./number-handler');
+var transformHandler = _dereq_('./transform-handler');
+
+var propertyHandlers = {};
+
+module.exports = {
+  propertyInterpolator: propertyInterpolator
+};
+
+//Handler to tween colors
+addPropertiesHandler(
+  colorHandler.parseColor, 
+  colorHandler.mergeColors, 
+  ['color', 'backgroundColor']
+);
+
+//Handler to tween dimensions
+addPropertiesHandler(
+  dimensionHandler.parseLengthOrPercent, 
+  dimensionHandler.mergeDimensions, 
+  ['left', 'right', 'top', 'bottom', 'width', 'height', 'border-width']
+);
+
+// Handler to tween opacity and keep it between 0/1
+addPropertiesHandler(
+  numberHandler.parseNumber, 
+  numberHandler.clampedMergeNumbers(0, 1), 
+  ['opacity']
+);
+
+// Handler to tween any transform value
+addPropertiesHandler(
+  transformHandler.parseTransform,
+  transformHandler.mergeTransforms,
+  ['transform']
+);
+
+
+function addPropertiesHandler(parser, merger, properties) {
+  for (var i = 0; i < properties.length; i++) {
+    var property = properties[i];
+    propertyHandlers[property] = propertyHandlers[property] || [];
+    propertyHandlers[property].push([parser, merger]);
+  }
+}
+
+function propertyInterpolator(property, left, right) {
+  var handlers = left == right ? [] : propertyHandlers[property];
+  for (var i = 0; handlers && i < handlers.length; i++) {
+    var parsedLeft = handlers[i][0](left);
+    var parsedRight = handlers[i][0](right);
+    if (parsedLeft !== undefined && parsedRight !== undefined) {
+      var interpolationArgs = handlers[i][1](parsedLeft, parsedRight);
+      if (interpolationArgs)
+        return makeInterpolator.apply(null, interpolationArgs);
+    }
+  }
+  return makeInterpolator(false, true, function(bool) {
+    return bool ? right : left;
+  });
+}
+
+function makeInterpolator(from, to, convertToString) {
+  return function(f) {
+    return convertToString(interpolate(from, to, f));
+  };
+}
+
+function interpolate(from, to, f) {
+  if ((typeof from == 'number') && (typeof to == 'number')) {
+    return from * (1 - f) + to * f;
+  }
+  if ((typeof from == 'boolean') && (typeof to == 'boolean')) {
+    return f < 0.5 ? from : to;
+  }
+  if (from.length == to.length) {
+    var r = [];
+    for (var i = 0; i < from.length; i++) {
+      r.push(interpolate(from[i], to[i], f));
+    }
+    return r;
+  }
+  throw 'Mismatched interpolation arguments ' + from + ':' + to;
+}
+
+},{"./color-handler":11,"./dimension-handler":12,"./number-handler":14,"./transform-handler":15}],14:[function(_dereq_,module,exports){
+/**
+ * Modified version of web-animations number-handler.js
+ */
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+// limitations under the License.
+
+module.exports = {
+  parseNumber: parseNumber,
+  mergeNumbers: mergeNumbers,
+  numberToString: numberToString,
+  clampedMergeNumbers: clampedMergeNumbers
+};
+
+function numberToString(x) {
+  return x.toFixed(3).replace('.000', '');
+}
+
+function clamp(min, max, x) {
+  return Math.min(max, Math.max(min, x));
+}
+
+function parseNumber(string) {
+  if (/^\s*[-+]?(\d*\.)?\d+\s*$/.test(string))
+    return Number(string);
+}
+
+function mergeNumbers(left, right) {
+  return [left, right, numberToString];
+}
+
+function clampedMergeNumbers(min, max) {
+  return function(left, right) {
+    return [left, right, function(x) {
+      return numberToString(clamp(min, max, x));
+    }];
+  };
+}
+
+},{}],15:[function(_dereq_,module,exports){
+/**
+ * Modified version of web-animations transform-handler.js
+ */
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+// limitations under the License.
+
+var colorHandler = _dereq_('./color-handler');
+var dimensionHandler = _dereq_('./dimension-handler');
+var numberHandler = _dereq_('./number-handler');
+
+module.exports = {
+  parseTransform: parseTransform,
+  mergeTransforms: mergeTransforms
+};
+
+var _ = null;
+function cast(pattern) {
+  return function(contents) {
+    var i = 0;
+    return pattern.map(function(x) { return x === _ ? contents[i++] : x; });
+  };
+}
+
+function id(x) { return x; }
+
+var pxZero = {px: 0};
+var degZero = {deg: 0};
+
+// FIXME: We should support matrix, matrix3d, perspective and rotate3d
+
+// type: [argTypes, convertTo3D, convertTo2D]
+// In the argument types string, lowercase characters represent optional arguments
+var transformFunctions = {
+  rotate: ['A'],
+  rotatex: ['A'],
+  rotatey: ['A'],
+  rotatez: ['A'],
+  scale: ['Nn', cast([_, _, 1]), id],
+  scalex: ['N', cast([_, 1, 1]), cast([_, 1])],
+  scaley: ['N', cast([1, _, 1]), cast([1, _])],
+  scalez: ['N', cast([1, 1, _])],
+  scale3d: ['NNN', id],
+  skew: ['Aa', null, id],
+  skewx: ['A', null, cast([_, degZero])],
+  skewy: ['A', null, cast([degZero, _])],
+  translate: ['Tt', cast([_, _, pxZero]), id],
+  translatex: ['T', cast([_, pxZero, pxZero]), cast([_, pxZero])],
+  translatey: ['T', cast([pxZero, _, pxZero]), cast([pxZero, _])],
+  translatez: ['L', cast([pxZero, pxZero, _])],
+  translate3d: ['TTL', id],
+};
+
+function parseTransform(string) {
+  string = string.toLowerCase().trim();
+  if (string == 'none')
+    return [];
+  // FIXME: Using a RegExp means calcs won't work here
+  var transformRegExp = /\s*(\w+)\(([^)]*)\)/g;
+  var result = [];
+  var match;
+  var prevLastIndex = 0;
+  while (match = transformRegExp.exec(string)) {
+    if (match.index != prevLastIndex)
+      return;
+    prevLastIndex = match.index + match[0].length;
+    var functionName = match[1];
+    var functionData = transformFunctions[functionName];
+    if (!functionData)
+      return;
+
+    var args = match[2].split(',');
+    var argTypes = functionData[0];
+    if (argTypes.length < args.length)
+      return;
+
+    var parsedArgs = [];
+    for (var i = 0; i < argTypes.length; i++) {
+      var arg = args[i];
+      var type = argTypes[i];
+      var parsedArg;
+      if (!arg)
+        parsedArg = ({a: degZero,
+                      n: parsedArgs[0],
+                      t: pxZero})[type];
+      else
+        parsedArg = ({A: function(s) { return s.trim() == '0' ? degZero : dimensionHandler.parseAngle(s); },
+                      N: numberHandler.parseNumber,
+                      T: dimensionHandler.parseLengthOrPercent,
+                      L: dimensionHandler.parseLength})[type.toUpperCase()](arg);
+      if (parsedArg === undefined)
         return;
-      }
+      parsedArgs.push(parsedArg);
+    }
+    result.push([functionName, parsedArgs]);
 
-      if (!self.isRunning) {
-        completedCallback && completedCallback(desiredFrames - (dropCounter / ((now - start) / millisecondsPerSecond)), self._animationId, false);
-        return;
-      }
-
-
-      // For the current rendering to apply let's update omitted steps in memory.
-      // This is important to bring internal state variables up-to-date with progress in time.
-      if (render) {
-
-        var droppedFrames = Math.round((now - lastFrame) / (millisecondsPerSecond / desiredFrames)) - 1;
-        if(self._unpausedAnimation) {
-          console.log('After pausing', droppedFrames, 'Dropped frames');
-        }
-        for (var j = 0; j < Math.min(droppedFrames, 4); j++) {
-          console.log('drop step');
-          step(true);
-          dropCounter++;
-        }
-
-      }
-
-      // Compute percent value
-      if (diff > delay && duration) {
-        percent = startPercent + (diff - delay) / duration;
-
-        // If we are animating in the opposite direction,
-        // the percentage is 1 minus this perc val
-        if(reverse === true) {
-          percent = 1 - percent;
-          if (percent < 0) {
-            percent = 0;
-          }
-        } else {
-          if (percent > 1) {
-            percent = 1;
-          }
-        }
-      }
-
-      self._unpausedAnimation = false;
-
-      // Execute step callback, then...
-      var value;
-      if(state.dynamic) {
-        value = state.dynamic.at(percent);
-      } else {
-        value = easingMethod ? easingMethod(percent) : percent;
-      }
-      if ((stepCallback(value, now, render) === false || percent === endPercent) && render) {
-        if(repeat === -1) {
-          perhapsAutoreverse();
-        } else if(iteration < repeat) {
-          // Track iterations
-          iteration++;
-          perhapsAutoreverse();
-        } else if(repeat === 0 && autoReverse) {
-          perhapsAutoreverse();
-        } else {
-          completedCallback && completedCallback(
-            desiredFrames - (dropCounter / ((now - start) / millisecondsPerSecond)),
-            self._animationId,
-            percent === endPercent || duration === null
-          );
-        }
-      } else if (render) {
-        lastFrame = now;
-        self._rafId = raf(step);
-      }
-    };
-
-
-    // Init first step
-    self._rafId = raf(step);
-
-    return step;
+    if (transformRegExp.lastIndex == string.length)
+      return result;
   }
 };
 
-},{"./easing-functions":11,"./motion":13,"node.extend":1,"raf":5}],13:[function(_dereq_,module,exports){
+function typeTo2D(type) {
+  return type.replace(/[xy]/, '');
+}
 
-var counter = 1;
-var running = {};
+function typeTo3D(type) {
+  return type.replace(/(x|y|z|3d)?$/, '3d');
+}
 
-/**
- * The main motion system manager. Treated as a singleton.
- */
-module.exports = {
-  animationStarted: function(instance) {
-    var id = counter++;
+function mergeTransforms(left, right) {
+  // FIXME: We should add optional matrix interpolation support for the early return cases
+  var flipResults = false;
+  if (!left.length || !right.length) {
+    if (!left.length) {
+      flipResults = true;
+      left = right;
+      right = [];
+    }
+    for (var i = 0; i < left.length; i++) {
+      var type = left[i][0];
+      var args = left[i][1];
+      var defaultValue = type.substr(0, 5) == 'scale' ? 1 : 0;
+      right.push([type, args.map(function(arg) {
+        if (typeof arg == 'number')
+          return defaultValue;
+        var result = {};
+        for (var unit in arg)
+          result[unit] = defaultValue;
+        return result;
+      })]);
+    }
+  }
 
-    // Compacting running db automatically every few new animations
-    if (id % 20 === 0) {
-      var newRunning = {};
-      for (var usedId in running) {
-        newRunning[usedId] = true;
-      }
-      running = newRunning;
+  if (left.length != right.length)
+    return;
+  var leftResult = [];
+  var rightResult = [];
+  var types = [];
+  for (var i = 0; i < left.length; i++) {
+    var leftType = left[i][0];
+    var rightType = right[i][0];
+    var leftArgs = left[i][1];
+    var rightArgs = right[i][1];
+
+    var leftFunctionData = transformFunctions[leftType];
+    var rightFunctionData = transformFunctions[rightType];
+
+    var type;
+    if (leftType == rightType) {
+      type = leftType;
+    } else if (leftFunctionData[2] && rightFunctionData[2] && typeTo2D(leftType) == typeTo2D(rightType)) {
+      type = typeTo2D(leftType);
+      leftArgs = leftFunctionData[2](leftArgs);
+      rightArgs = rightFunctionData[2](rightArgs);
+    } else if (leftFunctionData[1] && rightFunctionData[1] && typeTo3D(leftType) == typeTo3D(rightType)) {
+      type = typeTo3D(leftType);
+      leftArgs = leftFunctionData[1](leftArgs);
+      rightArgs = rightFunctionData[1](rightArgs);
+    } else {
+      return;
     }
 
-    // Mark as running
-    running[id] = true;
+    var stringConversions = [];
+    for (var j = 0; j < leftArgs.length; j++) {
+      var merge = typeof leftArgs[j] == 'number' ? numberHandler.mergeNumbers : dimensionHandler.mergeDimensions;
+      var merged = merge(leftArgs[j], rightArgs[j]);
+      leftArgs[j] = merged[0];
+      rightArgs[j] = merged[1];
+      stringConversions.push(merged[2]);
+    }
+    leftResult.push(leftArgs);
+    rightResult.push(rightArgs);
+    types.push([type, stringConversions]);
+  }
 
-    instance._animationId = id;
+  if (flipResults) {
+    var tmp = leftResult;
+    leftResult = rightResult;
+    rightResult = tmp;
+  }
 
-    // Return unique animation ID
-    return id;
+  return [leftResult, rightResult, function(list) {
+    return list.map(function(args, i) {
+      var stringifiedArgs = args.map(function(arg, j) {
+        return types[i][1][j](arg);
+      }).join(',');
+      return types[i][0] + '(' + stringifiedArgs + ')';
+    }).join(' ');
+  }];
+}
+
+
+
+},{"./color-handler":11,"./dimension-handler":12,"./number-handler":14}],16:[function(_dereq_,module,exports){
+
+var raf = _dereq_('raf');
+var running = {};
+
+var self = module.exports = {
+
+  animationStarted: function(instance) {
+    running[instance._.id] = instance;
+
+    if (!self.isTicking) {
+      self.tick();
+    }
   },
 
   animationStopped: function(instance) {
+    delete running[instance._.id];
+    self.maybeStopTicking();
   },
 
-  /* TODO: Move animation set management here instead of instance
-  anims: [],
-  add: function(animation) {
-    this.anims.push(animation);
-  },
-  remove: function(animation) {
-    var i, j;
-    for(i = 0, j = this.anims.length; i < j; i++) {
-      if(this.anims[i] === animation) {
-        return this.anims.splice(i, 1);
+  tick: function() {
+    var lastFrame = performance.now();
+
+    self.isTicking = true;
+    self._rafId = raf(step);
+
+    function step() {
+      self._rafId = raf(step);
+
+      // Get current time
+      var now = performance.now();
+      var deltaT = now - lastFrame;
+
+      for (var animationId in running) {
+        running[animationId]._tick(deltaT);
       }
+
+      lastFrame = now;
     }
   },
-  clear: function(shouldStop) {
-    while(this.anims.length) {
-      var anim = this.anims.pop();
-      if(shouldStop === true) {
-        anim.stop();
-      }
+
+  maybeStopTicking: function() {
+    if (self.isTicking && !Object.keys(running).length) {
+      raf.cancel(self._rafId);
+      self.isTicking = false;
     }
   },
-  */
-
-  /**
-   * Stops the given animation.
-   *
-   * @param id {Integer} Unique animation ID
-   * @return {Boolean} Whether the animation was stopped (aka, was running before)
-   * TODO: Requires above fix
-  stop: function(id) {
-    var cleared = running[id] != null;
-    if (cleared) {
-      running[id] = null;
-    }
-
-    return cleared;
-  },
-   */
-
-
-  /**
-   * Whether the given animation is still running.
-   *
-   * @param id {Integer} Unique animation ID
-   * @return {Boolean} Whether the animation is still running
-  isRunning: function(id) {
-    return running[id] != null;
-  },
-   */
 
 };
 
-},{}],14:[function(_dereq_,module,exports){
+
+},{"raf":5}],17:[function(_dereq_,module,exports){
+module.exports = {
+  animator: _dereq_('./animator')
+};
+
+},{"./animator":7}],18:[function(_dereq_,module,exports){
+
+/**
+ * nextUid() from angular.js
+ * License MIT
+ * http://github.com/angular/angular.js
+ *
+ * A consistent way of creating unique IDs in angular. The ID is a sequence of alpha numeric
+ * characters such as '012ABC'. The reason why we are not using simply a number counter is that
+ * the number string gets longer over time, and it can also overflow, where as the nextId
+ * will grow much slower, it is a string, and it will never overflow.
+ *
+ * @returns an unique alpha-numeric string
+ */
+var uid = [];
+
+module.exports = function nextUid() {
+  var index = uid.length;
+  var digit;
+
+  while(index) {
+    index--;
+    digit = uid[index].charCodeAt(0);
+    if (digit == 57 /*'9'*/) {
+      uid[index] = 'A';
+      return uid.join('');
+    }
+    if (digit == 90  /*'Z'*/) {
+      uid[index] = '0';
+    } else {
+      uid[index] = String.fromCharCode(digit + 1);
+      return uid.join('');
+    }
+  }
+  uid.unshift('0');
+  return uid.join('');
+};
+
+},{}],19:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2374,7 +2719,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -2439,6 +2784,6 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}]},{},[8])
-(8)
+},{}]},{},[17])
+(17)
 });

@@ -227,7 +227,6 @@ Animator.prototype = {
   },
 };
 
-// TODO delay repeat direction
 function figureOutEasing(easing) {
   if (typeof easing === 'object') {
     var dynamicType = isString(easing.type) && easing.type.toLowerCase().trim();
