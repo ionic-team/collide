@@ -83,7 +83,7 @@ animator.easing(easing); //setter, string|function(t,duration)|dynamicsConfigura
 See test.html.
 
 ```js
-var animator = collide.Animator({
+var animator = collide.animator({
   duration: 1000,
   easing: 'spring'
 })
@@ -91,5 +91,5 @@ var animator = collide.Animator({
     //Have the element spring over 400px
     myElement.css('webkitTransform', 'translateX(' + (v*400) + 'px)');
   })
-  .play();
+  .start();
 ```
