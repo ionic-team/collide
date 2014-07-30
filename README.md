@@ -14,7 +14,7 @@ Collide solves the problems with CSS animations using a simple Javascript animat
 COMING SOON: 
 
 - Tweening API
-- Seperating configuration phase from running the animation.
+- Separating configuration phase from running the animation.
 - Animation decay. Set a velocity on an animation and let it decelerate to a certain point.
 
 ### Development
@@ -25,31 +25,56 @@ COMING SOON:
 - Generated file `dist/collide.js` is require/CommonJS/window friendly. If you include it, it will be included as `window.collide`.
 - Note: the `collide.js` found in project root is only updated on release. The built version in dist is not added to git and should be used while developing.
 
-### API (quickly changing)
+### API (in flux, better documentation coming after API is stable)
 
 ```js
-var animator = collide.Animator({
+var animator = collide.animator({
+  // 'linear|ease|ease-in|ease-out|ease-in-out|cubic-bezer(x1,y1,x2,y2)' or function(t, duration) or a dynamics configuration (see below)
+  easing: 'ease-in-out', 
   duration: 1000,
-  easing: 'ease-in-out'
+  percent: 0,
+  iterations: 1,
+  direction: 'normal', // 'normal|alternate|reverse|alternate-reverse',
 });
 
+// Actions, all of these return `this` and are chainable
 // .on('step' callback is given a 'percent', 0-1, as argument
-// .on('complete' callback is given a boolean, wasCancelled
-animator.on(/step|pause|cancel|play|complete|start/, function() {})
-animator.once(...) //same events
-animator.promise(); // .then(onStop(boolean wasCompleted), onCancel(boolean wasError))
-animator.pause();
-animator.cancel();
-animator.play();
-animator.percent(newPercent); //setter
-animator.reverse(isReverse); //setter
-animator.autoReverse(isAutoReverse); //setter
-animator.repeat(repeatCount); //setter
+// .on('stop' callback is given a boolean, wasCompleted
+animator.on(/step|destroy|start|stop/, function() {})
+animator.once(...) //same event types
+animator.removeListener(eventType, callback);
+animator.removeAllListeners();
+animator.stop();
+animator.start();
+animator.destroy(); //unbind all events & deallocate
 
-animator.isReverse(); //boolean getter
-animator.isPlaying(); //boolean getter
+// make it so the animation runs, will interpolate el from starting styles to ending styles
+// returns a function to unbind the interpolation from the animation. Or you can run destroy()
+var unbind = animator.addInterpolation(el, startingStyles, endingStyles); 
 
-animator.percent(0).pause(); //chainable
+//These are getters and setters.
+//No arguments is a getter, argument is a setter.
+animator.percent(newPercent); //0-1
+animator.duration(duration); //milliseconds
+animator.direction(isReverse); //same as option
+animator.iterations(iterationCount); //same as option
+animator.easing(easing); //setter, string|function(t,duration)|dynamicsConfiguration.
+// Dynamics configuration looks like this one of these:
+// animator.easing({
+//   type: 'spring',
+//   frequency: 15,
+//   friction: 200,
+//   initialForce: false
+// });
+// animator.easing({
+//   type: 'gravity',
+//   frequency: 15,
+//   friction: 200,
+//   initialForce: false
+// });
+
+//Getters
+animator.isRunning(); //boolean getter
 ```
 
 ### Examples

@@ -5,8 +5,8 @@
     <title></title>
 
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
-    <script src="collide.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.js"></script>
+    <script src="dist/collide.js"></script>
     <style>
       .box {
         position: absolute;
@@ -19,7 +19,7 @@
       }
       #opts {
         position: absolute;
-        top: 400px;
+        top: 200px;
         left: 10px;
       }
     </style>
@@ -30,7 +30,7 @@
 
     <div ng-controller="MyCtrl">
       <div class="box"></div>
-      <div class="box" id="draggable"></div>
+      <!-- <div class="box" id="draggable"></div> -->
       <div id="opts">
         <label>
           Duration:
@@ -67,8 +67,8 @@
         <button ng-click="do('cubic-bezier')">cubic-bezier</button>
         </p>
         <p>
-          <button ng-click="currentAnimation.isPlaying() && currentAnimation.pause() || currentAnimation.play()">Toggle Pause/Play</button>
-          <button ng-click="currentAnimation.percent(0.5)">Start Over</button>
+          <button ng-click="toggle()">Toggle Pause/Play</button>
+          <button ng-click="currentAnimation.percent(0.3)">Go to 30%</button>
         </p>
       </div>
       {{animationResult}}
@@ -78,8 +78,6 @@
       angular.module('myApp', [])
       .controller('MyCtrl', function($scope) {
 
-        var currentAnimationConfig;
-        var currentAnimation;
         $scope.fns = [
           'linear',
           'ease',
@@ -89,15 +87,21 @@
         ];
         $scope.anim = {
           duration: 2000,
-          delay: 0,
-          repeat: 0,
-          reverse: false,
-          autoReverse: false,
           bx1: 0.17,
           by1: 0.67,
           bx2: 0.83,
-          by2: 0.67
-        }
+          by2: 0.67,
+          direction: 'normal'
+        };
+
+        $scope.toggle = function() {
+          if (!$scope.currentAnimation) return;
+          if ($scope.currentAnimation.isRunning()) {
+            $scope.currentAnimation.stop();
+          } else {
+            $scope.currentAnimation.start();
+          }
+        };
         var el = angular.element(document.querySelector('.box'));
         $scope.do = function(fn) {
           if(fn == 'cubic-bezier') {
@@ -107,9 +111,9 @@
                 $scope.anim.bx2 + ',' +
                 $scope.anim.by2 + ')';
           }
-          currentAnimationConfig = angular.extend({
+          var config = angular.extend({
             name: 'fadeIn',
-            duration: 2000,
+            duration: 1500,
             delay: 500,
             autoReverse: false,
             repeat: 0,
@@ -117,31 +121,33 @@
           }, $scope.anim);
 
           if(fn == 'spring') {
-            currentAnimationConfig = angular.extend(currentAnimationConfig, {
-              dynamicsType: collide.dynamics.Spring,
-              frequency: 15,
-              friction: 200,
-              initialForce: false,
+            angular.extend(config, {
+              easing: {
+                type: 'spring',
+                frequency: 15,
+                friction: 200,
+                initialForce: false
+              }
             });
           } else if (fn == 'gravity') {
-
-            currentAnimationConfig = angular.extend(currentAnimationConfig, {
-              dynamicsType: collide.dynamics.Gravity,
-              frequency: 15,
-              friction: 200,
-              initialForce: false,
+            angular.extend(config, {
+              easing: {
+                type: 'gravity',
+                frequency: 15,
+                friction: 200,
+                initialForce: false
+              }
             });
           }
 
-          $scope.currentAnimation = currentAnimation = collide.Animator(currentAnimationConfig)
-            .on('complete', function() {
-              console.log('Done.');
-            })
+          $scope.currentAnimation = collide.animator(config);
+          $scope.currentAnimation
             .on('step', function(v) {
-              el[0].style.webkitTransform = 'translate3d(' + (v * 400) + 'px, 0,0)';
-              //console.log('step', arguments);
+              el[0].style.webkitTransform = 'translate3d(' + (v * 180) + 'px, 0,0)';
             })
-            .play();
+            .on('stop', console.log.bind(console, 'onStop. didFinish?'))
+            .on('start', console.log.bind(console, 'onStart'))
+            .start();
         }
       });
     </script>

@@ -8,43 +8,25 @@
 var extend = require('node.extend');
 
 module.exports = {
-  Spring: DynamicsSpring,
-  Gravity: DynamicsGravity
+  spring: dynamicsSpring,
+  gravity: dynamicsGravity
 };
 
-function DynamicsSpring(opts) {
-  var defaults = {
-    frequency: 15,
-    friction: 200,
-    anticipationStrength: 0,
-    anticipationSize: 0
-  };
-  extend(this, defaults);
+var springDefaults = {
+  frequency: 15,
+  friction: 200,
+  anticipationStrength: 0,
+  anticipationSize: 0
+};
+function dynamicsSpring(opts) {
+  opts = extend({}, springDefaults, opts);
 
-  var maxs = {
-    frequency: 100,
-    friction: 1000,
-    anticipationStrength: 1000,
-    anticipationSize: 99
-  };
-
-  var mins = {
-    frequency: 0,
-    friction: 1,
-    anticipationStrength: 0,
-    anticipationSize: 0
-  };
-
-  extend(this, opts);
-}
-
-DynamicsSpring.prototype = {
-  at: function(t) {
+  return function at(t, duration) {
     var A, At, a, angle, b, decal, frequency, friction, frictionT, s, v, y0, yS,
-    _this = this;
-    frequency = Math.max(1, this.frequency);
-    friction = Math.pow(20, this.friction / 100);
-    s = this.anticipationSize / 100;
+    _opts = opts;
+    frequency = Math.max(1, opts.frequency);
+    friction = Math.pow(20, opts.friction / 100);
+    s = opts.anticipationSize / 100;
     decal = Math.max(0, s);
     frictionT = (t / (1 - s)) - (s / (1 - s));
     if (t < s) {
@@ -55,7 +37,7 @@ DynamicsSpring.prototype = {
         x1 = 0;
         b = (x0 - (M * x1)) / (x0 - x1);
         a = (M - b) / x0;
-        return (a * t * _this.anticipationStrength / 100) + b;
+        return (a * t * _opts.anticipationStrength / 100) + b;
       };
       yS = (s / (1 - s)) - (s / (1 - s));
       y0 = (0 / (1 - s)) - (s / (1 - s));
@@ -73,32 +55,33 @@ DynamicsSpring.prototype = {
     v = 1 - (At * Math.cos(angle));
     //return [t, v, At, frictionT, angle];
     return v;
-  }
-};
-
-function DynamicsGravity(opts) {
-  this.options = {
-    bounce: 40,
-    gravity: 1000,
-    initialForce: false
   };
-  extend(this.options, opts);
-  this.curves = [];
-  this.init();
 }
 
-DynamicsGravity.prototype = {
-  length: function() {
+var gravityDefaults = {
+  bounce: 40,
+  gravity: 1000,
+  initialForce: false
+};
+function dynamicsGravity(opts) {
+  opts = extend({}, gravityDefaults, opts);
+  var curves = [];
+
+  init();
+
+  return at;
+
+  function length() {
     var L, b, bounce, curve, gravity;
-    bounce = Math.min(this.options.bounce / 100, 80);
-    gravity = this.options.gravity / 100;
+    bounce = Math.min(opts.bounce / 100, 80);
+    gravity = opts.gravity / 100;
     b = Math.sqrt(2 / gravity);
     curve = {
       a: -b,
       b: b,
       H: 1
     };
-    if (this.options.initialForce) {
+    if (opts.initialForce) {
       curve.a = 0;
       curve.b = curve.b * 2;
     }
@@ -111,25 +94,26 @@ DynamicsGravity.prototype = {
       };
     }
     return curve.b;
-  },
-  init: function() {
+  }
+
+  function init() {
     var L, b, bounce, curve, gravity, _results;
 
-    L = this.length();
-    gravity = (this.options.gravity / 100) * L * L;
-    bounce = Math.min(this.options.bounce / 100, 80);
+    L = length();
+    gravity = (opts.gravity / 100) * L * L;
+    bounce = Math.min(opts.bounce / 100, 80);
     b = Math.sqrt(2 / gravity);
-    this.curves = [];
+    curves = [];
     curve = {
       a: -b,
       b: b,
       H: 1
     };
-    if (this.options.initialForce) {
+    if (opts.initialForce) {
       curve.a = 0;
       curve.b = curve.b * 2;
     }
-    this.curves.push(curve);
+    curves.push(curve);
     _results = [];
     while (curve.b < 1 && curve.H > 0.001) {
       L = curve.b - curve.a;
@@ -138,38 +122,39 @@ DynamicsGravity.prototype = {
         b: curve.b + L * bounce,
         H: curve.H * bounce * bounce
       };
-      _results.push(this.curves.push(curve));
+      _results.push(curves.push(curve));
     }
     return _results;
-  },
-  curve: function(a, b, H, t){
+  }
 
+  function calculateCurve(a, b, H, t){
     var L, c, t2;
     L = b - a;
     t2 = (2 / L) * t - 1 - (a * 2 / L);
     c = t2 * t2 * H - H + 1;
-    if (this.initialForce) {
+    if (opts.initialForce) {
       c = 1 - c;
     }
     return c;
-  },
-  at: function(t) {
+  }
+
+  function at(t, duration) {
     var bounce, curve, gravity, i, v;
-    bounce = this.options.bounce / 100;
-    gravity = this.options.gravity;
+    bounce = opts.bounce / 100;
+    gravity = opts.gravity;
     i = 0;
-    curve = this.curves[i];
+    curve = curves[i];
     while (!(t >= curve.a && t <= curve.b)) {
       i += 1;
-      curve = this.curves[i];
+      curve = curves[i];
       if (!curve) {
         break;
       }
     }
     if (!curve) {
-      v = this.options.initialForce ? 0 : 1;
+      v = opts.initialForce ? 0 : 1;
     } else {
-      v = this.curve(curve.a, curve.b, curve.H, t);
+      v = calculateCurve(curve.a, curve.b, curve.H, t);
     }
     //return [t, v];
     return v;
