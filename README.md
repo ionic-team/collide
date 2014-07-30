@@ -56,7 +56,7 @@ var detach = animator.addInterpolation(el, startingStyles, endingStyles);
 animator.isRunning(); //boolean getter
 
 //These are getters and setters.
-//No arguments is a getter, argument is a setter.
+//No arguments is a getter, argument is a chainable setter.
 animator.percent(newPercent); //0-1
 animator.duration(duration); //milliseconds
 animator.direction(isReverse); //same as option
