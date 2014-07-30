@@ -23,7 +23,9 @@ Coming Soon:
 - Generated file `dist/collide.js` is require/CommonJS/window friendly. If you include it, it will be included as `window.collide`.
 - Note: the `collide.js` found in project root is only updated on release. The built version in dist is not added to git and should be used while developing.
 
-### API (in flux, better documentation coming after API is stable)
+### API
+
+**This is in flux, better documentation coming after API is stable
 
 ```js
 var animator = collide.animator({
