@@ -85,7 +85,7 @@ See test.html.
 ```js
 var animator = collide.animator({
   duration: 1000,
-  easing: 'spring'
+  easing: 'ease-in-out'
 })
   .on('step', function(v) {
     //Have the element spring over 400px
