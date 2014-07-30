@@ -5,7 +5,7 @@
  * Also licensed under MIT
  */
 
-var extend = require('node.extend');
+var extend = require('node-extend');
 
 module.exports = {
   spring: dynamicsSpring,

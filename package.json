@@ -8,8 +8,8 @@
   "dependencies": {
     "events": "^1.0.1",
     "promiscuous": "^0.6.0",
-    "node.extend": "^1.0.10",
     "raf": "^2.0.1",
-    "feature": "^0.1.4"
+    "feature": "^0.1.4",
+    "node-extend": "^0.2.0"
   }
 }
