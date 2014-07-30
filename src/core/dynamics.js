@@ -5,7 +5,7 @@
  * Also licensed under MIT
  */
 
-var extend = require('node-extend');
+var extend = require('../util/extend');
 
 module.exports = {
   spring: dynamicsSpring,
@@ -19,7 +19,7 @@ var springDefaults = {
   anticipationSize: 0
 };
 function dynamicsSpring(opts) {
-  opts = extend({}, springDefaults, opts);
+  opts = extend({}, springDefaults, opts || {});
 
   return function at(t, duration) {
     var A, At, a, angle, b, decal, frequency, friction, frictionT, s, v, y0, yS,
@@ -64,7 +64,7 @@ var gravityDefaults = {
   initialForce: false
 };
 function dynamicsGravity(opts) {
-  opts = extend({}, gravityDefaults, opts);
+  opts = extend({}, gravityDefaults, opts || {});
   var curves = [];
 
   init();

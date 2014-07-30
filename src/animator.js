@@ -1,5 +1,4 @@
 
-var extend = require('node-extend');
 var EventEmitter = require('events');
 var cssFeature = require('feature/css');
 
