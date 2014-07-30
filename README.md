@@ -25,7 +25,7 @@ Coming Soon:
 
 ### API
 
-**This is in flux, better documentation coming after API is stable
+**This is in flux, better documentation coming after API is stable**
 
 ```js
 var animator = collide.animator({
