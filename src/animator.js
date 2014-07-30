@@ -46,6 +46,7 @@ function Animator(opts) {
   };
   this._.onStop = function(wasCompleted) {
     emitter.emit('stop', wasCompleted);
+    wasCompleted && emitter.emit('complete');
   };
   this._.onStart = function() {
     emitter.emit('start');
@@ -60,6 +61,7 @@ Animator.prototype = {
   direction: function(direction) {
     if (arguments.length && isString(direction)) {
       this._.direction = figureOutDirection(direction);
+      return this;
     }
     return this._.direction;
   },
@@ -67,6 +69,7 @@ Animator.prototype = {
   iterations: function(iterations) {
     if (arguments.length && isNumber(iterations)) {
       this._.iterations = iterations;
+      return this;
     }
     return this._.iterations;
   },
@@ -76,6 +79,7 @@ Animator.prototype = {
     if (arguments.length &&
         (type === 'function' || type === 'string' || type === 'object')) {
       this._.easing = figureOutEasing(easing);
+      return this;
     }
     return this._.easing;
   },
@@ -87,6 +91,7 @@ Animator.prototype = {
       if (!this._.isRunning) {
         this._.onStep(this._getValueForPercent(this._.percent));
       }
+      return this;
     }
     return this._.percent;
   },
@@ -94,6 +99,7 @@ Animator.prototype = {
   duration: function(duration) {
     if (arguments.length && isNumber(duration)) {
       this._.duration = Math.max(1, duration);
+      return this;
     }
     return this._.duration;
   },
@@ -120,6 +126,13 @@ Animator.prototype = {
     return !!this._.isRunning; 
   },
 
+  promise: function() {
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      self.once('stop', resolve);
+    });
+  },
+
   on: function(eventType, listener) {
     this._.emitter.on(eventType, listener);
     return this;
@@ -139,7 +152,7 @@ Animator.prototype = {
 
   destroy: function() {
     this.stop();
-    this.onDestroy();
+    this._.onDestroy();
     this._.emitter.removeAllListeners();
     return this;
   },

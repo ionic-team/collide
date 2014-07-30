@@ -40,7 +40,7 @@ var animator = collide.animator({
 // Actions, all of these return `this` and are chainable
 // .on('step' callback is given a 'percent', 0-1, as argument
 // .on('stop' callback is given a boolean, wasCompleted
-animator.on(/step|destroy|start|stop/, function() {})
+animator.on(/step|destroy|start|stop|complete/, function() {})
 animator.once(...) //same event types
 animator.removeListener(eventType, callback);
 animator.removeAllListeners();

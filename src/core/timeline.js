@@ -1,6 +1,9 @@
 
 var raf = require('raf');
 var running = {};
+var time = window.performance ? function() {
+  return performance.now();
+} : Date.now;
 
 var self = module.exports = {
 
@@ -18,7 +21,7 @@ var self = module.exports = {
   },
 
   tick: function() {
-    var lastFrame = performance.now();
+    var lastFrame = time();
 
     self.isTicking = true;
     self._rafId = raf(step);
@@ -27,7 +30,7 @@ var self = module.exports = {
       self._rafId = raf(step);
 
       // Get current time
-      var now = performance.now();
+      var now = time();
       var deltaT = now - lastFrame;
 
       for (var animationId in running) {

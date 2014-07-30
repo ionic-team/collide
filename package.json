@@ -8,6 +8,7 @@
   "dependencies": {
     "events": "^1.0.1",
     "raf": "^2.0.1",
-    "feature": "^0.1.4"
+    "feature": "^0.1.4",
+    "promiscuous": "^0.6.0"
   }
 }
