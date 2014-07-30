@@ -11,10 +11,8 @@ We built Collide because we wanted to give Ionic developers the power to build c
 
 Collide solves the problems with CSS animations using a simple Javascript animation engine and API. It also provides a tweening API similar to WebAnimations, and allows the developer to hook into every frame for full control over the behavior of the animation.
 
-COMING SOON: 
+Coming Soon:
 
-- Tweening API
-- Separating configuration phase from running the animation.
 - Animation decay. Set a velocity on an animation and let it decelerate to a certain point.
 
 ### Development
@@ -29,7 +27,9 @@ COMING SOON:
 
 ```js
 var animator = collide.animator({
-  // 'linear|ease|ease-in|ease-out|ease-in-out|cubic-bezer(x1,y1,x2,y2)' or function(t, duration) or a dynamics configuration (see below)
+  // 'linear|ease|ease-in|ease-out|ease-in-out|cubic-bezer(x1,y1,x2,y2)',
+  // or function(t, duration),
+  // or a dynamics configuration (see below)
   easing: 'ease-in-out', 
   duration: 1000,
   percent: 0,
@@ -48,9 +48,12 @@ animator.stop();
 animator.start();
 animator.destroy(); //unbind all events & deallocate
 
-// make it so the animation runs, will interpolate el from starting styles to ending styles
-// returns a function to unbind the interpolation from the animation. Or you can run destroy()
-var unbind = animator.addInterpolation(el, startingStyles, endingStyles); 
+// Tweening
+// Whenever the animation runs, it will interpolate el from starting styles to ending styles
+// returns a function to detach the element from the animation. Or you can run destroy()
+var detach = animator.addInterpolation(el, startingStyles, endingStyles); 
+
+animator.isRunning(); //boolean getter
 
 //These are getters and setters.
 //No arguments is a getter, argument is a setter.
@@ -73,8 +76,6 @@ animator.easing(easing); //setter, string|function(t,duration)|dynamicsConfigura
 //   initialForce: false
 // });
 
-//Getters
-animator.isRunning(); //boolean getter
 ```
 
 ### Examples
