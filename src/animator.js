@@ -167,7 +167,7 @@ Animator.prototype = {
     return this;
   },
 
-  start: function(shouldRenderImmediately) {
+  start: function() {
     if (this._.isRunning) return;
 
     //If we're done, start animation over
@@ -176,13 +176,8 @@ Animator.prototype = {
       this._.iterationsRemaining = this._.iterations;
     }
 
-    if (shouldRenderImmediately) {
-      this._.onStep(this._getValueForPercent(this._.percent));
-      this._.noProgressionFirstTick = false;
-    } else {
-      // Otherwise, the first tick makes no progress
-      this._.noProgressionFirstTick = true;
-    }
+    // Otherwise, the first tick makes no progress
+    this._.noProgressionFirstTick = true;
 
     this._.isRunning = true;
     timeline.animationStarted(this);
