@@ -10,43 +10,46 @@ function SimpleEventEmitter() {
 
 SimpleEventEmitter.prototype = {
   listeners: [],
-  on: function(eventType, listener) {
+  on: function(eventType, fn) {
+    if (typeof fn !== 'function') return;
     this.listeners[eventType] || (this.listeners[eventType] = []);
-    this.listeners[eventType].push(listener);
+    this.listeners[eventType].push(fn);
   },
-  once: function(eventType, listener) {
-    this.on(eventType, function onceFn() {
-      this.off(eventType, onceFn);
-      this.off(eventType, listener);
-    });
-    this.on(eventType, listener);
+  once: function(eventType, fn) {
+    var self = this;
+    function onceFn() {
+      self.off(eventType, fn);
+      self.off(eventType, onceFn);
+    }
+    this.on(eventType, fn);
+    this.on(eventType, onceFn);
   },
   // Built-in limitation: we only expect 0-1 arguments
   // This is to save as much perf as possible when sending
   // events every frame.
-  emit: function(eventType, arg) {
+  emit: function(eventType, eventArg) {
     var listeners = this.listeners[eventType] || [];
     var i = 0;
     var len = listeners.length;
     if (arguments.length === 2) {
-      for (i = 0; i < len; i++) listeners[i](arg);
+      for (i; i < len; i++) listeners[i] && listeners[i](eventArg);
     } else {
-      for (i = 0; i < len; i++) listeners[i]();
+      for (i; i < len; i++) listeners[i] && listeners[i]();
     }
   },
-  off: function(eventType, listenerToRemove) {
+  off: function(eventType, fnToRemove) {
     if (!eventType) {
       //Remove all listeners
-      for (eventType in this.listeners) {
-        this.off(eventType);
+      for (var type in this.listeners) {
+        this.off(type);
       }
     } else  {
       var listeners = this.listeners[eventType];
       if (listeners) {
-        if (!listenerToRemove) {
+        if (!fnToRemove) {
           listeners.length = 0;
         } else {
-          var index = listeners.indexOf(listenerToRemove);
+          var index = listeners.indexOf(fnToRemove);
           listeners.splice(index, 1);
         }
       }

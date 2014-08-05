@@ -1,14 +1,12 @@
 
 var raf = require('raf');
-var running = {};
-var time = window.performance && performance.now ?
-  function() { return performance.now(); } :
-  Date.now;
+var time = require('../util/time');
 
 var self = module.exports = {
+  _running: {},
 
   animationStarted: function(instance) {
-    running[instance._.id] = instance;
+    self._running[instance._.id] = instance;
 
     if (!self.isTicking) {
       self.tick();
@@ -16,7 +14,7 @@ var self = module.exports = {
   },
 
   animationStopped: function(instance) {
-    delete running[instance._.id];
+    delete self._running[instance._.id];
     self.maybeStopTicking();
   },
 
@@ -33,8 +31,8 @@ var self = module.exports = {
       var now = time();
       var deltaT = now - lastFrame;
 
-      for (var animationId in running) {
-        running[animationId]._tick(deltaT);
+      for (var animationId in self._running) {
+        self._running[animationId]._tick(deltaT);
       }
 
       lastFrame = now;
@@ -42,7 +40,7 @@ var self = module.exports = {
   },
 
   maybeStopTicking: function() {
-    if (self.isTicking && !Object.keys(running).length) {
+    if (self.isTicking && !Object.keys(self._running).length) {
       raf.cancel(self._rafId);
       self.isTicking = false;
     }

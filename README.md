@@ -19,6 +19,7 @@ Coming Soon:
 
 - `npm install`
 - `npm install -g browserify`
+- `npm run test` runs jasmine-node tests. `npm run autotest` will watch and test
 - `npm run build`
 - Generated file `dist/collide.js` is require/CommonJS/window friendly. If you include it, it will be included as `window.collide`.
 - Note: the `collide.js` found in project root is only updated on release. The built version in dist is not added to git and should be used while developing.
@@ -35,25 +36,19 @@ var animator = collide.animator({
   easing: 'ease-in-out', 
   duration: 1000,
   percent: 0,
-  iterations: 1,
-  direction: 'normal', // 'normal|alternate|reverse|alternate-reverse',
+  reverse: false
 });
 
 // Actions, all of these return `this` and are chainable
-// .on('step' callback is given a 'percent', 0-1, as argument
+// .on('step' callback is given a 'percent', 0-1, as argument (for springs it could be outside 0-1 range)
 // .on('stop' callback is given a boolean, wasCompleted
 animator.on(/step|destroy|start|stop|complete/, function() {})
 animator.once(...) //same event types
-animator.removeListener(eventType, callback);
-animator.removeAllListeners();
-animator.stop();
-animator.start();
+animator.off(...) //works like jquery.off
+animator.stop(); //stop/pause at current position
+animator.start(); //start from current position
+animator.restrart(); //start over
 animator.destroy(); //unbind all events & deallocate
-
-// Tweening
-// Whenever the animation runs, it will interpolate el from starting styles to ending styles
-// returns a function to detach the element from the animation. Or you can run destroy()
-var detach = animator.addInterpolation(el, startingStyles, endingStyles); 
 
 animator.isRunning(); //boolean getter
 
@@ -61,8 +56,7 @@ animator.isRunning(); //boolean getter
 //No arguments is a getter, argument is a chainable setter.
 animator.percent(newPercent); //0-1
 animator.duration(duration); //milliseconds
-animator.direction(isReverse); //same as option
-animator.iterations(iterationCount); //same as option
+animator.reverse(isReverse);
 animator.easing(easing); //setter, string|function(t,duration)|dynamicsConfiguration.
 // Dynamics configuration looks like this one of these:
 // animator.easing({
