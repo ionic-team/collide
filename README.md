@@ -46,15 +46,15 @@ animator.on(/step|destroy|start|stop|complete/, function() {})
 animator.once(...) //same event types
 animator.off(...) //works like jquery.off
 animator.stop(); //stop/pause at current position
-animator.start(); //start from current position
-animator.restart(); //start over
+animator.start(shouldSetImmediately); //start from current position
+animator.restart(shouldSetImmediately); //start over
 animator.destroy(); //unbind all events & deallocate
 
 animator.isRunning(); //boolean getter
 
 //These are getters and setters.
 //No arguments is a getter, argument is a chainable setter.
-animator.percent(newPercent); //0-1
+animator.percent(newPercent, shouldSetImmediately); //0-1
 animator.duration(duration); //milliseconds
 animator.reverse(isReverse);
 

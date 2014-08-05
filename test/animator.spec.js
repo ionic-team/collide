@@ -3,8 +3,8 @@ var dynamics = require('../src/core/dynamics');
 
 var cssFeature = jasmine.createSpy('cssFeature').andReturn('vendorTransform');
 var timeline = {
-  animationStarted: jasmine.createSpy(),
-  animationStopped: jasmine.createSpy()
+  tickAction: jasmine.createSpy('tickAction'),
+  untickAction: jasmine.createSpy('untickAction')
 };
 
 var proxyquire = require('proxyquire');
@@ -15,8 +15,8 @@ var Animator = proxyquire('../src/animator', {
 describe('animator', function() {
 
   beforeEach(function() {
-    timeline.animationStarted.reset();
-    timeline.animationStopped.reset();
+    timeline.tickAction.reset();
+    timeline.untickAction.reset();
   });
 
   it('.duration() should set/get duration', function() {
@@ -58,7 +58,7 @@ describe('animator', function() {
     expect(animator.easing()(1, 100)).toEqual(dynamics.spring()(1,100));
   });
 
-  it('.percent() shoold set/get percent', function() {
+  it('.percent() should set/get percent', function() {
     var animator = new Animator({
       percent: 0.5
     });
@@ -80,17 +80,16 @@ describe('animator', function() {
     expect(animator.isRunning()).toBe(true);
   });
 
-  it('.percent() should step if not running', function() {
+  it('.percent() should step on next tick if not running', function() {
     var animator = new Animator();
-    var stepSpy = jasmine.createSpy('step');
-    animator.on('step', stepSpy);
     animator.percent(0);
-    expect(stepSpy).toHaveBeenCalledWith(0);
+    expect(timeline.tickAction).toHaveBeenCalled();
 
-    stepSpy.reset();
     animator.start();
+    timeline.tickAction.reset();
     animator.percent(0.5);
-    expect(stepSpy).not.toHaveBeenCalled();
+    //Already running, no need to tick the pause action in
+    expect(timeline.tickAction).not.toHaveBeenCalled();
   });
 
   it('.promise() should resolve once when the animation stops', function() {
@@ -126,7 +125,7 @@ describe('animator', function() {
     animator.on('complete', completeSpy);
     animator._.isRunning = true;
     animator.stop();
-    expect(timeline.animationStopped).toHaveBeenCalledWith(animator);
+    expect(timeline.untickAction).toHaveBeenCalledWith(animator._.id);
     expect(stopSpy).toHaveBeenCalledWith(false);
     expect(completeSpy).not.toHaveBeenCalledWith();
     expect(animator.isRunning()).toBe(false);
@@ -152,14 +151,14 @@ describe('animator', function() {
   });
 
   describe('.start()', function() {
-    it('should start running and call animationStarted and emit event', function() {
+    it('should start running and call tickAction and emit event', function() {
       var animator = new Animator();
       var startSpy = jasmine.createSpy('start');
       animator.on('start', startSpy);
       animator.start();
       expect(startSpy).toHaveBeenCalled();
       expect(animator.isRunning()).toBe(true);
-      expect(timeline.animationStarted).toHaveBeenCalledWith(animator);
+      expect(timeline.tickAction).toHaveBeenCalledWith(animator._.id, animator._tick);
     });
 
     it('should startImmediately with parameter or isStarting', function() {
@@ -221,7 +220,7 @@ describe('animator', function() {
       var stepSpy = jasmine.createSpy('step');
       animator.on('step', stepSpy);
       animator._tick(200);
-      expect(stepSpy).toHaveBeenCalledWith(easings.ease()(0.2, 1000));
+      expect(stepSpy).toHaveBeenCalledWith(Math.round(easings.ease()(0.2, 1000) * 10000) / 10000);
     });
 
     it('should stop at end percent', function() {

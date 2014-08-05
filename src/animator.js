@@ -19,6 +19,7 @@ function Animator(opts) {
   if (!(this instanceof Animator)) {
     return new Animator(opts);
   }
+  var self = this;
 
   opts = opts || {};
 
@@ -41,14 +42,38 @@ function Animator(opts) {
   this._.onStart = function() {
     emitter.emit('start');
   };
+
+  var precision = 10000;
   this._.onStep = function(v) {
-    emitter.emit('step', v);
+    emitter.emit('step', Math.round(v * precision) / precision);
   };
 
   opts.duration && this.duration(opts.duration);
   opts.percent && this.percent(opts.percent);
   opts.easing && this.easing(opts.easing);
   opts.reverse && this.reverse(opts.reverse);
+  
+  //Put this here so we don't have to call _tick in the context of our object.
+  //Avoids having to use .bind() or .call() every frame.
+  self._tick = function(deltaT) {
+    var state = self._;
+
+    //First tick, don't up the percent
+    if (state.isStarting) {
+      state.isStarting = false;
+    } else if (state.isReverse) {
+      state.percent = Math.max(0, state.percent - (deltaT / state.duration));
+    } else {
+      state.percent = Math.min(1, state.percent + (deltaT / state.duration));
+    }
+    
+    state.onStep(self._getValueForPercent(state.percent));
+
+    if (state.percent === self._getEndPercent()) {
+      self.stop();
+    }
+  };
+
 }
 
 Animator.prototype = {
@@ -72,13 +97,21 @@ Animator.prototype = {
     return this._.easing;
   },
 
-  percent: function(percent) {
+  percent: function(percent, immediate) {
+    var self = this;
     if (arguments.length) {
       if (typeof percent === 'number') {
         this._.percent = clamp(0, percent, 1);
       }
       if (!this.isRunning()) {
-        this._.onStep(this._getValueForPercent(this._.percent));
+        if (immediate) {
+          this._.onStep(this._getValueForPercent(percent));
+        } else {
+          timeline.tickAction(this._.id, function() {
+            self._.onStep(self._getValueForPercent(percent));
+            timeline.untickAction(self._.id);
+          });
+        }
       }
       return this;
     }
@@ -94,27 +127,6 @@ Animator.prototype = {
     }
     return this._.duration;
   },
-
-  /**
-   * Interpolation is disabled for now.
-   */
-  // addInterpolation: function(el, startingStyles, endingStyles) {
-  //   var interpolators;
-  //   if (arguments.length) {
-  //     syncStyles(startingStyles, endingStyles, window.getComputedStyle(el));
-  //     interpolators = makePropertyInterpolators(startingStyles, endingStyles);
-
-  //     this.on('step', setStyles);
-  //     return function unbind() {
-  //       this.off('step', setStyles);
-  //     };
-  //   }
-  //   function setStyles(v) {
-  //     for (var property in interpolators) {
-  //       el.style[property] = interpolators[property](v);
-  //     }
-  //   }
-  // },
 
   isRunning: function() { 
     return !!this._.isRunning; 
@@ -153,7 +165,7 @@ Animator.prototype = {
     if (!this._.isRunning) return;
 
     this._.isRunning = false;
-    timeline.animationStopped(this);
+    timeline.untickAction(this._.id);
 
     this._.onStop(this._isComplete());
     return this;
@@ -177,7 +189,7 @@ Animator.prototype = {
     }
 
     this._.isRunning = true;
-    timeline.animationStarted(this);
+    timeline.tickAction(this._.id, this._tick);
 
     this._.onStart();
     return this;
@@ -199,25 +211,6 @@ Animator.prototype = {
       return this._.easing(percent, this._.duration);
     }
     return percent;
-  },
-
-  _tick: function(deltaT) {
-    var state = this._;
-
-    //First tick, don't up the percent
-    if (state.isStarting) {
-      state.isStarting = false;
-    } else if (state.isReverse) {
-      state.percent = Math.max(0, state.percent - (deltaT / state.duration));
-    } else {
-      state.percent = Math.min(1, state.percent + (deltaT / state.duration));
-    }
-    
-    state.onStep(this._getValueForPercent(state.percent));
-
-    if (state.percent === this._getEndPercent()) {
-      this.stop();
-    }
   },
 
 };
