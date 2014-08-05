@@ -1,12 +1,13 @@
 
-var EventEmitter = require('events');
 var cssFeature = require('feature/css');
 
 var timeline = require('./core/timeline');
 var dynamics = require('./core/dynamics');
 var interpolate = require('./core/interpolate');
 var easingFunctions = require('./core/easing-functions');
+
 var uid = require('./util/uid');
+var EventEmitter = require('./util/simple-emitter');
 
 function clamp(min, n, max) { return Math.max(min, Math.min(n, max)); }
 function isString(value){return typeof value === 'string';}
@@ -22,7 +23,7 @@ function Animator(opts) {
 
   opts = opts || {};
 
-  //Everything private goes in `this._`
+  //Private state goes in this._
   this._ = {
     id: uid(),
     percent: 0,
@@ -112,7 +113,7 @@ Animator.prototype = {
 
       this.on('step', setStyles);
       return function unbind() {
-        this.removeListener('step', setStyles);
+        this.off('step', setStyles);
       };
     }
     function setStyles(v) {
@@ -141,19 +142,15 @@ Animator.prototype = {
     this._.emitter.once(eventType, listener);
     return this;
   },
-  removeListener: function(eventType, listener) {
-    this._.emitter.removeListener(eventType, listener);
-    return this;
-  },
-  removeAllListeners: function() {
-    this._.emitter.removeAllListeners();
+  off: function(eventType, listener) {
+    this._.emitter.off(eventType, listener);
     return this;
   },
 
   destroy: function() {
     this.stop();
     this._.onDestroy();
-    this._.emitter.removeAllListeners();
+    this._.emitter.off();
     return this;
   },
 
@@ -232,6 +229,7 @@ Animator.prototype = {
       }
     }
   },
+
 };
 
 function figureOutEasing(easing) {

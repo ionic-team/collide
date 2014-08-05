@@ -1,9 +1,9 @@
 
 var raf = require('raf');
 var running = {};
-var time = window.performance ? function() {
-  return performance.now();
-} : Date.now;
+var time = window.performance && performance.now ?
+  function() { return performance.now(); } :
+  Date.now;
 
 var self = module.exports = {
 

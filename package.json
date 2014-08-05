@@ -6,7 +6,6 @@
     "build": "mkdir -p dist && browserify src/index.js -s collide > dist/collide.js"
   },
   "dependencies": {
-    "events": "^1.0.1",
     "raf": "^2.0.1",
     "feature": "^0.1.4",
     "promiscuous": "^0.6.0"
