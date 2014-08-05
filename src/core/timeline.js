@@ -1,6 +1,6 @@
 
 var raf = require('raf');
-var time = require('../util/time');
+var time = require('performance-now');
 
 var self = module.exports = {
   _running: {},

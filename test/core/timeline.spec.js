@@ -14,8 +14,8 @@ function mockTime() {
 
 var proxyquire = require('proxyquire');
 var timeline = proxyquire('../../src/core/timeline', {
-  raf: mockRaf,
-  '../util/time': mockTime
+  'raf': mockRaf,
+  'performance-now': mockTime
 });
 
 describe('timeline', function() {

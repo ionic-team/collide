@@ -1,6 +1,6 @@
 {
   "name": "collide",
-  "version": "0.0.4",
+  "version": "1.0.0-beta.1",
   "main": "collide.js",
   "ignore": [
     "src"

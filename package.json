@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "raf": "^2.0.1",
-    "feature": "^0.1.4"
+    "feature": "^0.1.4",
+    "performance-now": "^0.1.3"
   },
   "devDependencies": {
     "jasmine-node": "^1.14.5",
