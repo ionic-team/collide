@@ -47,7 +47,7 @@ animator.once(...) //same event types
 animator.off(...) //works like jquery.off
 animator.stop(); //stop/pause at current position
 animator.start(); //start from current position
-animator.restrart(); //start over
+animator.restart(); //start over
 animator.destroy(); //unbind all events & deallocate
 
 animator.isRunning(); //boolean getter
@@ -57,6 +57,7 @@ animator.isRunning(); //boolean getter
 animator.percent(newPercent); //0-1
 animator.duration(duration); //milliseconds
 animator.reverse(isReverse);
+
 animator.easing(easing); //setter, string|function(t,duration)|dynamicsConfiguration.
 // Dynamics configuration looks like this one of these:
 // animator.easing({
