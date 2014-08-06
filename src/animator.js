@@ -21,6 +21,7 @@ function Animator(opts) {
   }
   var self = this;
 
+
   opts = opts || {};
 
   //Private state goes in this._

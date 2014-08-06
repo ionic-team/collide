@@ -6,10 +6,10 @@
 module.exports = SimpleEventEmitter;
 
 function SimpleEventEmitter() {
+  this.listeners = [];
 }
 
 SimpleEventEmitter.prototype = {
-  listeners: [],
   on: function(eventType, fn) {
     if (typeof fn !== 'function') return;
     this.listeners[eventType] || (this.listeners[eventType] = []);
