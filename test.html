@@ -7,11 +7,12 @@
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.js"></script>
     <script src="dist/collide.js"></script>
+    <script src="https://hammerjs.github.io/dist/hammer.js"></script>
     <style>
       .box {
         position: absolute;
-        width: 100px;
-        height: 100px;
+        width: 120px;
+        height: 120px;
         background-color: black;
       }
       #draggable {
@@ -22,6 +23,11 @@
         top: 200px;
         left: 10px;
       }
+      .box-container {
+        width: 520px;
+        height: 120px;
+        background: #EEE;
+      }
     </style>
 
   </head>
@@ -29,7 +35,9 @@
   <body>
 
     <div ng-controller="MyCtrl">
-      <div class="box"></div>
+      <div class="box-container">
+        <div id="box" class="box"></div>
+      </div>
       <!-- <div class="box" id="draggable"></div> -->
       <div id="opts">
         <label>
@@ -103,7 +111,7 @@
           }
         };
         var el = angular.element(document.querySelector('.box'));
-        $scope.do = function(fn) {
+        $scope.do = function(fn, noRun) {
           if(fn == 'cubic-bezier') {
             fn = 'cubic-bezier(' +
                 $scope.anim.bx1 + ',' +
@@ -140,15 +148,45 @@
             });
           }
 
-          $scope.currentAnimation = collide.animator(config);
-          $scope.currentAnimation
+          $scope.currentAnimation = collide.animation(config);
+          window.anim = $scope.currentAnimation
             .on('step', function(v) {
-              el[0].style.webkitTransform = 'translate3d(' + (v * 180) + 'px, 0,0)';
+              el[0].style.webkitTransform = 'translate3d('+ (v * 400) + 'px, 0,0)';
             })
             .on('stop', console.log.bind(console, 'onStop. didFinish?'))
-            .on('start', console.log.bind(console, 'onStart'))
-            .start();
+            .on('start', console.log.bind(console, 'onStart'));
+          if (!noRun) {
+            window.anim.start();
+          }
         }
+        $scope.do('linear', true);
+      });
+
+var mc;
+      mc = new Hammer(document.getElementById('box'));
+      var width = 400;
+      var drag;
+      mc.on('panleft panright', function(e) {
+        if (!drag) {
+          drag = {};
+          drag.startPercent = window.anim.percent() || 0;
+          drag.startX = e.center.x;
+          // window.anim.easing('linear');
+        }
+        window.anim
+          // .reverse(e.type === 'panleft')
+          .percent(drag.startPercent + (e.center.x - drag.startX) / width);
+      });
+      mc.on('panend', function(e) {
+        window.anim
+          // .easing({
+          //   type: 'spring',
+          //   frequency: 15,
+          //   friction: 200,
+          //   initialForce: false
+          // })
+          .velocity(-e.velocityX * 2);
+        drag = null;
       });
     </script>
   </body>

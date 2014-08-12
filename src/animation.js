@@ -12,12 +12,14 @@ var EventEmitter = require('./util/simple-emitter');
 
 function clamp(min, n, max) { return Math.max(min, Math.min(n, max)); }
 
-module.exports = Animator;
+var VELOCITY_MIN = 0.0075;
 
-function Animator(opts) {
+module.exports = Animation;
+
+function Animation(opts) {
   //if `new` keyword isn't provided, do it for user
-  if (!(this instanceof Animator)) {
-    return new Animator(opts);
+  if (!(this instanceof Animation)) {
+    return new Animation(opts);
   }
   var self = this;
 
@@ -29,7 +31,9 @@ function Animator(opts) {
     id: uid(),
     percent: 0,
     duration: 500,
-    isReverse: false
+    reverse: false,
+    distance: 100,
+    deceleration: 0.998
   };
 
   var emitter = this._.emitter = new EventEmitter();
@@ -53,38 +57,58 @@ function Animator(opts) {
   opts.percent && this.percent(opts.percent);
   opts.easing && this.easing(opts.easing);
   opts.reverse && this.reverse(opts.reverse);
-  
+  opts.distance && this.distance(opts.distance);
+ 
   //Put this here so we don't have to call _tick in the context of our object.
   //Avoids having to use .bind() or .call() every frame.
   self._tick = function(deltaT) {
     var state = self._;
+    
+    state.onStep(animStepValue(self, state.percent));
+
+    if (Math.abs(state.velocity) < VELOCITY_MIN) {
+      state.velocity = 0;
+      return self.stop();
+    }
+    if (state.percent === animEndPercent(self)) {
+      return self.stop();
+    }
 
     //First tick, don't up the percent
-    if (state.isStarting) {
-      state.isStarting = false;
-    } else if (state.isReverse) {
-      state.percent = Math.max(0, state.percent - (deltaT / state.duration));
+    if (!deltaT) {
+      // Do nothing
+    } else if (state.velocity) {
+      var velocity = decayVelocity(state.velocity, deltaT, state.deceleration);
+      var currentDistance = state.percent * state.distance;
+      if (state.reverse) {
+        state.percent = (currentDistance - velocity) / state.distance;
+      } else {
+        state.percent = (currentDistance + velocity) / state.distance;
+      }
+      if (state.percent > 1 || state.percent < 0) {
+        state.percent = clamp(0, state.percent, 1);
+        state.velocity = 0;
+      }
+      state.velocity = velocity;
     } else {
-      state.percent = Math.min(1, state.percent + (deltaT / state.duration));
+      if (state.reverse) {
+        state.percent = state.percent - (deltaT / state.duration);
+      } else {
+        state.percent = state.percent + (deltaT / state.duration);
+      }
     }
-    
-    state.onStep(self._getValueForPercent(state.percent));
 
-    if (state.percent === self._getEndPercent()) {
-      self.stop();
-    }
+    state.percent = clamp(0, state.percent, 1);
   };
-
 }
 
-Animator.prototype = {
-
+Animation.prototype = {
   reverse: function(reverse) {
     if (arguments.length) {
-      this._.isReverse = !!reverse;
+      this._.reverse = !!reverse;
       return this;
     }
-    return this._.isReverse;
+    return this._.reverse;
   },
 
   easing: function(easing) {
@@ -106,10 +130,10 @@ Animator.prototype = {
       }
       if (!this.isRunning()) {
         if (immediate) {
-          this._.onStep(this._getValueForPercent(percent));
+          this._tick();
         } else {
           timeline.tickAction(this._.id, function() {
-            self._.onStep(self._getValueForPercent(percent));
+            self._tick();
             timeline.untickAction(self._.id);
           });
         }
@@ -117,6 +141,26 @@ Animator.prototype = {
       return this;
     }
     return this._.percent;
+  },
+
+  distance: function(distance) {
+    if (arguments.length) {
+      if (typeof distance === 'number' && distance > 0) {
+        this._.distance = distance;
+      }
+      return this;
+    }
+    return this._.distance;
+  },
+
+  deceleration: function(deceleration) {
+    if (arguments.length) {
+      if (typeof deceleration === 'number' && deceleration > 0 && deceleration < 1) {
+        this._.deceleration = deceleration;
+      }
+      return this;
+    }
+    return this._.deceleration;
   },
 
   duration: function(duration) {
@@ -168,53 +212,63 @@ Animator.prototype = {
     this._.isRunning = false;
     timeline.untickAction(this._.id);
 
-    this._.onStop(this._isComplete());
+    this._.onStop(animIsComplete(this));
     return this;
   },
 
   restart: function(immediate) {
     if (this._.isRunning) return;
 
-    this._.percent = this._getStartPercent();
+    this._.percent = animStartPercent(this);
 
     return this.start(!!immediate);
   },
 
   start: function(immediate) {
-    if (this._.isRunning) return;
-
-    if (immediate) {
-      this._.onStep(this._getValueForPercent(this._.percent));
-    } else {
-      this._.isStarting = true;
-    }
-
-    this._.isRunning = true;
-    timeline.tickAction(this._.id, this._tick);
-
-    this._.onStart();
-    return this;
+    return animBegin(this, immediate);
   },
 
-  _isComplete: function() {
-    return !this._.isRunning && 
-      this._.percent === this._getEndPercent();
+  velocity: function(velocity, immediate) {
+    this._.velocity = velocity;
+    return animBegin(this, immediate);
   },
-  _getEndPercent: function() {
-    return this._.isReverse ? 0 : 1;
-  },
-  _getStartPercent: function() {
-    return this._.isReverse ? 1 : 0;
-  },
-
-  _getValueForPercent: function(percent) {
-    if (this._.easing) {
-      return this._.easing(percent, this._.duration);
-    }
-    return percent;
-  },
-
 };
+
+function animBegin(animation, immediate) {
+  if (immediate) {
+    animation._tick();
+  }
+
+  animation._.isRunning = true;
+  timeline.tickAction(animation._.id, animation._tick);
+
+  animation._.onStart();
+  return animation;
+}
+function animIsComplete(animation) {
+  return !animation._.isRunning && 
+    animation._.percent === animEndPercent(animation);
+}
+function animEndPercent(animation) {
+  return animation._.reverse ? 0 : 1;
+}
+function animStartPercent(animation) {
+  return animation._.reverse ? 1 : 0;
+}
+function animStepValue(animation, value) {
+  if (animation._.easing) {
+    return animation._.easing(
+      animation._.reverse ? 1-value : value,
+      animation._.duration
+    );
+  }
+  return value;
+}
+
+function decayVelocity(velocity, dt, deceleration) {
+  var kv = Math.pow(deceleration, dt);
+  return velocity * kv;
+}
 
 function figureOutEasing(easing) {
   if (typeof easing === 'object') {

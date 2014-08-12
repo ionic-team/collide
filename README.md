@@ -29,7 +29,7 @@ Coming Soon:
 **This is in flux, better documentation coming after API is stable**
 
 ```js
-var animator = collide.animator({
+var animation = collide.animation({
   // 'linear|ease|ease-in|ease-out|ease-in-out|cubic-bezer(x1,y1,x2,y2)',
   // or function(t, duration),
   // or a dynamics configuration (see below)
@@ -42,31 +42,33 @@ var animator = collide.animator({
 // Actions, all of these return `this` and are chainable
 // .on('step' callback is given a 'percent', 0-1, as argument (for springs it could be outside 0-1 range)
 // .on('stop' callback is given a boolean, wasCompleted
-animator.on(/step|destroy|start|stop|complete/, function() {})
-animator.once(...) //same event types
-animator.off(...) //works like jquery.off
-animator.stop(); //stop/pause at current position
-animator.start(shouldSetImmediately); //start from current position
-animator.restart(shouldSetImmediately); //start over
-animator.destroy(); //unbind all events & deallocate
+animation.on(/step|destroy|start|stop|complete/, function() {})
+animation.once(...) //same event types
+animation.off(...) //works like jquery.off
+animation.stop(); //stop/pause at current position
+animation.start(shouldSetImmediately); //start from current position
+animation.restart();
+animation.velocity(n) //starts the animation going at the given velocity ,relative to the distance, decaying
+animation.distance(n); //distance for the velocity to be relative to
+animation.destroy(); //unbind all events & deallocate
 
-animator.isRunning(); //boolean getter
+animation.isRunning(); //boolean getter
 
 //These are getters and setters.
 //No arguments is a getter, argument is a chainable setter.
-animator.percent(newPercent, shouldSetImmediately); //0-1
-animator.duration(duration); //milliseconds
-animator.reverse(isReverse);
+animation.percent(newPercent, shouldSetImmediately); //0-1
+animation.duration(duration); //milliseconds
+animation.reverse(isReverse);
 
-animator.easing(easing); //setter, string|function(t,duration)|dynamicsConfiguration.
+animation.easing(easing); //setter, string|function(t,duration)|dynamicsConfiguration.
 // Dynamics configuration looks like this one of these:
-// animator.easing({
+// animation.easing({
 //   type: 'spring',
 //   frequency: 15,
 //   friction: 200,
 //   initialForce: false
 // });
-// animator.easing({
+// animation.easing({
 //   type: 'gravity',
 //   frequency: 15,
 //   friction: 200,
@@ -80,7 +82,7 @@ animator.easing(easing); //setter, string|function(t,duration)|dynamicsConfigura
 See test.html.
 
 ```js
-var animator = collide.animator({
+var animation = collide.animation({
   duration: 1000,
   easing: 'ease-in-out'
 })

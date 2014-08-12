@@ -1,3 +1,3 @@
 module.exports = {
-  animator: require('./animator')
+  animation: require('./animation')
 };
