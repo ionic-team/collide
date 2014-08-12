@@ -70,9 +70,8 @@ animation.easing(easing); //setter, string|function(t,duration)|dynamicsConfigur
 // });
 // animation.easing({
 //   type: 'gravity',
-//   frequency: 15,
-//   friction: 200,
-//   initialForce: false
+//   bounce: 40,
+//   gravity: 1000,
 // });
 
 ```
