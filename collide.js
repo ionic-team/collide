@@ -189,11 +189,8 @@ function Animation(opts) {
     } else if (state.velocity) {
       var velocity = decayVelocity(state.velocity, deltaT, state.deceleration);
       var currentDistance = state.percent * state.distance;
-      if (state.reverse) {
-        state.percent = (currentDistance - velocity) / state.distance;
-      } else {
-        state.percent = (currentDistance + velocity) / state.distance;
-      }
+      state.percent = (currentDistance - velocity) / state.distance;
+
       if (state.percent > 1 || state.percent < 0) {
         state.percent = clamp(0, state.percent, 1);
         state.velocity = 0;
@@ -366,10 +363,7 @@ function animStartPercent(animation) {
 }
 function animStepValue(animation, value) {
   if (animation._.easing) {
-    return animation._.easing(
-      animation._.reverse ? 1-value : value,
-      animation._.duration
-    );
+    return animation._.easing(value, animation._.duration);
   }
   return value;
 }
