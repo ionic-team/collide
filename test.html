@@ -26,6 +26,7 @@
       .box-container {
         width: 520px;
         height: 120px;
+        border: 1px solid red;
         background: #EEE;
       }
     </style>
@@ -54,14 +55,10 @@
           <input type="number" ng-model="anim.delay">
         </label>
         <br>
-        <label>
-          Auto reverse
-          <input type="checkbox" ng-model="anim.autoReverse">
-        </label>
         <br>
         <label>
-          Reverse
-          <input type="checkbox" ng-model="anim.reverse">
+          Invert
+          <input type="checkbox" ng-model="$inverted" ng-change="anim.invert($inverted)">
         </label>
         <br>
         <button ng-click="do(v)" ng-repeat="v in fns">{{v}}</button>
@@ -123,7 +120,6 @@
             name: 'fadeIn',
             duration: 1500,
             delay: 500,
-            autoReverse: false,
             repeat: 0,
             easing: fn,
           }, $scope.anim);
@@ -162,7 +158,13 @@
         $scope.do('linear', true);
       });
 
-var mc;
+      var releaseEasing = {
+        type: 'gravity',
+        frequency: 15,
+        friction: 200,
+        initialForce: false
+      };
+      var mc;
       mc = new Hammer(document.getElementById('box'));
       var width = 400;
       var drag;
@@ -171,21 +173,18 @@ var mc;
           drag = {};
           drag.startPercent = window.anim.percent() || 0;
           drag.startX = e.center.x;
-          // window.anim.easing('linear');
+          anim.easing('linear');
         }
-        window.anim
-          // .reverse(e.type === 'panleft')
-          .percent(drag.startPercent + (e.center.x - drag.startX) / width);
+        drag.direction = e.center.x < drag.startX ? -1 : 1;
+        window.anim.percent(
+          drag.startPercent + (e.distance / width * drag.direction), true
+        );
       });
       mc.on('panend', function(e) {
+          console.log('velocity', e.velocityX.toFixed(3));
         window.anim
-          // .easing({
-          //   type: 'spring',
-          //   frequency: 15,
-          //   friction: 200,
-          //   initialForce: false
-          // })
-          .velocity(-e.velocityX * 2);
+          .transitionEasingTo(releaseEasing, true)
+          .velocity(-e.velocityX *2);
         drag = null;
       });
     </script>

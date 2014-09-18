@@ -34,7 +34,6 @@
 }).call(this);
 
 /*
-//@ sourceMappingURL=performance-now.map
 */
 
 }).call(this,_dereq_("qhDIRT"))

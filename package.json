@@ -3,7 +3,7 @@
   "version": "0.0.4",
   "main": "collide.js",
   "scripts": {
-    "build": "mkdir -p dist && browserify src/index.js -s collide > dist/collide.js",
+    "build": "mkdir -p dist && browserify src/index.js -s collide | sed 's/sourceMappingURL//g' > dist/collide.js",
     "test": "node_modules/.bin/jasmine-node test --color",
     "autotest": "node_modules/.bin/jasmine-node test --watch src --autotest --color"
   },

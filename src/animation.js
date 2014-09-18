@@ -7,12 +7,14 @@ var timeline = require('./core/timeline');
 var dynamics = require('./core/dynamics');
 var easingFunctions = require('./core/easing-functions');
 
+var extend = require('./util/extend');
 var uid = require('./util/uid');
 var EventEmitter = require('./util/simple-emitter');
 
 function clamp(min, n, max) { return Math.max(min, Math.min(n, max)); }
+function identity(n) { return n; }
 
-var VELOCITY_MIN = 0.0075;
+var VELOCITY_MIN = 0.01;
 
 module.exports = Animation;
 
@@ -23,7 +25,6 @@ function Animation(opts) {
   }
   var self = this;
 
-
   opts = opts || {};
 
   //Private state goes in this._
@@ -31,9 +32,10 @@ function Animation(opts) {
     id: uid(),
     percent: 0,
     duration: 500,
-    reverse: false,
+    inverted: false,
     distance: 100,
-    deceleration: 0.998
+    deceleration: 0.998,
+    velocity: 0
   };
 
   var emitter = this._.emitter = new EventEmitter();
@@ -50,13 +52,16 @@ function Animation(opts) {
 
   var precision = 10000;
   this._.onStep = function(v) {
-    emitter.emit('step', Math.round(v * precision) / precision);
+    emitter.emit(
+      'step', 
+      Math.round((self._.inverted ? 1 - v : v) * precision) / precision
+    );
   };
 
   opts.duration && this.duration(opts.duration);
   opts.percent && this.percent(opts.percent);
   opts.easing && this.easing(opts.easing);
-  opts.reverse && this.reverse(opts.reverse);
+  opts.inverted && this.inverted(opts.inverted);
   opts.distance && this.distance(opts.distance);
  
   //Put this here so we don't have to call _tick in the context of our object.
@@ -66,33 +71,22 @@ function Animation(opts) {
     
     state.onStep(animStepValue(self, state.percent));
 
-    if (Math.abs(state.velocity) < VELOCITY_MIN) {
+    if (state.percent === 1 || 
+       (state.hasVelocity && (state.percent === 0 || Math.abs(state.velocity) < VELOCITY_MIN))) {
       state.velocity = 0;
-      return self.stop();
-    }
-    if (state.percent === animEndPercent(self)) {
+      state.hasVelocity = false;
       return self.stop();
     }
 
-    //First tick, don't up the percent
     if (!deltaT) {
       // Do nothing
-    } else if (state.velocity) {
+    } else if (state.hasVelocity) {
       var velocity = decayVelocity(state.velocity, deltaT, state.deceleration);
       var currentDistance = state.percent * state.distance;
-      state.percent = (currentDistance - velocity) / state.distance;
-
-      if (state.percent > 1 || state.percent < 0) {
-        state.percent = clamp(0, state.percent, 1);
-        state.velocity = 0;
-      }
+      state.percent = (currentDistance + velocity) / state.distance;
       state.velocity = velocity;
     } else {
-      if (state.reverse) {
-        state.percent = state.percent - (deltaT / state.duration);
-      } else {
-        state.percent = state.percent + (deltaT / state.duration);
-      }
+      state.percent += (deltaT / state.duration);
     }
 
     state.percent = clamp(0, state.percent, 1);
@@ -100,23 +94,40 @@ function Animation(opts) {
 }
 
 Animation.prototype = {
-  reverse: function(reverse) {
+  inverted: function(inverted) {
     if (arguments.length) {
-      this._.reverse = !!reverse;
+      this._.inverted = !!inverted;
       return this;
     }
-    return this._.reverse;
+    return this._.inverted;
   },
 
   easing: function(easing) {
     var type = typeof easing;
     if (arguments.length) {
       if (type === 'function' || type === 'string' || type === 'object') {
-        this._.easing = figureOutEasing(easing);
+        this._.easing = this._.easingFn = figureOutEasing(easing);
       }
       return this;
     }
-    return this._.easing;
+    return this._.easingFn;
+  },
+
+  transitionEasingTo: function(newEasing) {
+    var self = this;
+    var oldEasing = self._.easingFn;
+    self._.easing = figureOutEasing(newEasing);
+    var startPercent = self._.percent;
+    var startEasingValue = oldEasing && oldEasing(self._.percent) || 0;
+    var compression = self._.percent === 1 ?  1 : 1 / (1 - self._.percent);
+
+    self._.easingFn = function(percent, duration) {
+      var compressedPercent = compression * (percent - startPercent);
+      var result = self._.easing(compressedPercent, duration);
+      return startEasingValue + result * (1-startEasingValue);
+    };
+
+    return self;
   },
 
   percent: function(percent, immediate) {
@@ -214,21 +225,23 @@ Animation.prototype = {
   },
 
   restart: function(immediate) {
-    if (this._.isRunning) return;
-
-    this._.percent = animStartPercent(this);
-
+    this._.percent = 0;
+    //Decompress easing fn if it's compressed
+    this._.easingFn = this._.easing;
     return this.start(!!immediate);
   },
 
   start: function(immediate) {
+    if (animIsComplete(this)) return;
     return animBegin(this, immediate);
   },
 
   velocity: function(velocity, immediate) {
+    if (animIsComplete(this)) return;
     this._.velocity = velocity;
+    this._.hasVelocity = true;
     return animBegin(this, immediate);
-  },
+  }
 };
 
 function animBegin(animation, immediate) {
@@ -243,18 +256,11 @@ function animBegin(animation, immediate) {
   return animation;
 }
 function animIsComplete(animation) {
-  return !animation._.isRunning && 
-    animation._.percent === animEndPercent(animation);
-}
-function animEndPercent(animation) {
-  return animation._.reverse ? 0 : 1;
-}
-function animStartPercent(animation) {
-  return animation._.reverse ? 1 : 0;
+  return !animation._.isRunning && animation._.percent === 1;
 }
 function animStepValue(animation, value) {
-  if (animation._.easing) {
-    return animation._.easing(value, animation._.duration);
+  if (animation._.easingFn) {
+    return animation._.easingFn(value, animation._.duration);
   }
   return value;
 }

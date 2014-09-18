@@ -28,7 +28,7 @@ module.exports = {
     };
   },
   'cubic-bezier': function(x1, y1, x2, y2, duration) {
-    var bz = bezier.cubicBezier(x1, y1, x2, y2);//, t, duration);
+    var bz = bezier.cubicBezier(x1, y1, x2, y2);
     return function(t, duration) {
       return bz(t, duration);
     };
