@@ -1,7 +1,7 @@
 Collide
 --------
 
-Collide is a powerful yet simple javascript animation engine for web and hybrid mobile apps, inspired by [Facebook Pop](https://github.com/facebook/pop), built by the [Ionic Framework](http://ionicframework.com/) team.
+Collide is a powerful yet simple javascript animation engine for web and hybrid mobile apps, inspired by [Facebook Pop](https://github.com/facebook/pop), built by the [Ionic](http://ionicframework.com/) team.
 
 Animations in Collide have more power and control than CSS animations or transitions, all without sacrificing performance.
 
